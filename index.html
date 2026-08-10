@@ -154,9 +154,10 @@
     font-size: 13px; color: var(--text-dim); pointer-events: none;
   }
 
-  .fill-current-btn {
+  .quick-actions-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+
+  .fill-current-btn, .survey-btn {
     display: inline-flex; align-items: center; gap: 5px;
-    margin-top: 8px;
     padding: 7px 12px;
     border: 1px solid var(--border);
     border-radius: 999px;
@@ -168,6 +169,8 @@
     cursor: pointer;
   }
   .fill-current-btn:hover { background: var(--cream-deep); border-color: var(--amber-light); }
+  .survey-btn { color: var(--green); border-color: rgba(63,163,92,0.3); }
+  .survey-btn:hover { background: rgba(63,163,92,0.08); border-color: var(--green); }
 
   .date-picker { position: relative; }
 
@@ -357,6 +360,40 @@
   .target-date-box strong { color: var(--text); font-weight: 700; }
   .pace-ok { color: var(--green); }
   .pace-warn { color: var(--red); }
+
+  .history-list { max-height: 260px; overflow-y: auto; padding-right: 2px; }
+  .history-list::-webkit-scrollbar { width: 5px; }
+  .history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .history-empty { font-size: 13px; color: var(--text-dim); padding: 4px 0; }
+
+  .history-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--border); }
+  .history-row:last-child { border-bottom: none; }
+
+  .history-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .history-time { font-size: 10.5px; color: var(--text-dim); }
+  .history-label { font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .history-amount { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+  .history-amount.is-plus { color: var(--green); }
+  .history-amount.is-minus { color: var(--red); }
+
+  .history-undo-btn {
+    flex-shrink: 0; font-size: 11px; color: var(--text-dim);
+    background: none; border: 1px solid var(--border); border-radius: 8px;
+    padding: 5px 9px; font-family: inherit; cursor: pointer; white-space: nowrap;
+  }
+  .history-undo-btn:hover { border-color: var(--amber); color: var(--amber-deep); }
+
+  .history-footer { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .history-footer .note { margin: 0; }
+
+  .history-clear-btn {
+    align-self: flex-start; font-size: 11.5px; color: var(--text-dim);
+    background: none; border: none; padding: 0; font-family: inherit;
+    cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+  }
+  .history-clear-btn:hover { color: var(--red); }
 
   footer { text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 24px; line-height: 1.8; opacity: 0.85; }
   footer a { color: var(--amber-deep); }
@@ -568,7 +605,10 @@
         <input type="number" id="current" inputmode="decimal" min="0" step="1" placeholder="例: 30">
         <span class="unit">本</span>
       </div>
-      <button type="button" class="fill-current-btn" id="fillCurrentBtn">🔄 所持通貨から反映</button>
+      <div class="quick-actions-row">
+        <button type="button" class="fill-current-btn" id="fillCurrentBtn">🔄 所持通貨から反映</button>
+        <button type="button" class="survey-btn" id="surveyBtn">📋 アンケートに回答した(+3本)</button>
+      </div>
     </div>
     <div class="field">
       <label for="targetDateTrigger">目標日(任意)</label>
@@ -638,12 +678,21 @@
     <div id="resultContent"></div>
   </section>
 
+  <section class="card">
+    <h2>📜 獲得履歴</h2>
+    <div class="history-list" id="historyList"></div>
+    <div class="history-footer">
+      <p class="note">所持通貨からの反映・アンケート回答による増減を記録します(最大50件)。「取り消す」でその操作だけを元に戻せます。</p>
+      <button type="button" class="history-clear-btn" id="historyClearBtn">履歴を全て消去</button>
+    </div>
+  </section>
+
     </div> <!-- /.main-content-wrapper -->
   </div> <!-- /.app-layout -->
 
   <footer>
     このサイトはSky 星を紡ぐ子どもたちの非公式ファンサイトです。thatgamecompanyは一切関与していません。<br>
-    作成・ご意見: <a href="https://x.com/Skyzztai" target="_blank" rel="noopener noreferrer">@Skyzztai</a><br>
+    作成・ご意見: <a href="https://x.com/Skyzztai" target="_blank" rel="noopener noreferrer">@Skyzztai</a>　／　<a href="https://odaibako.net/u/Skyzztai" target="_blank" rel="noopener noreferrer">リクエストフォーム</a><br>
     <a href="https://taipak5000.github.io/tai-info/" target="_blank" rel="noopener noreferrer">⚙️ 設定・更新情報・クレジット・プライバシーポリシー</a>
   </footer>
 </div>
@@ -1032,8 +1081,11 @@
     dailyRateReadout: document.getElementById('dailyRateReadout'),
     heartsToSend: document.getElementById('heartsToSend'),
     fillCurrentBtn: document.getElementById('fillCurrentBtn'),
+    surveyBtn: document.getElementById('surveyBtn'),
     candleFill: document.getElementById('candleFill'),
-    resultContent: document.getElementById('resultContent')
+    resultContent: document.getElementById('resultContent'),
+    historyList: document.getElementById('historyList'),
+    historyClearBtn: document.getElementById('historyClearBtn')
   };
 
   // 入力内容をブラウザに保存する。localStorageが使えない環境(プライベートモード、
@@ -1074,6 +1126,89 @@
     return date.getFullYear() + '年' + (date.getMonth() + 1) + '月' + date.getDate() + '日(' + days[date.getDay()] + ')';
   }
 
+  // ═══ 📜 獲得履歴(星のキャンドル計算機と同じ仕組み) ═══
+  var HISTORY_STORAGE_KEY = nsKey('skyNomacanCalc_history_v1');
+  var HISTORY_MAX_ENTRIES = 50;
+
+  function loadHistory() {
+    try {
+      var raw = window.localStorage.getItem(HISTORY_STORAGE_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      return Object.prototype.toString.call(list) === '[object Array]' ? list : [];
+    } catch (err) { return []; }
+  }
+  function saveHistory(list) {
+    try { window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(list)); } catch (err) { /* no-op */ }
+  }
+  function historyTimeLabel(ms) {
+    var parts = new Intl.DateTimeFormat('ja-JP', {
+      timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
+    }).formatToParts(new Date(ms));
+    var map = {};
+    parts.forEach(function (part) { map[part.type] = part.value; });
+    return map.month + '/' + map.day + ' ' + map.hour + ':' + map.minute;
+  }
+  function addHistoryEntry(label, amount) {
+    if (!amount) return;
+    var list = loadHistory();
+    list.unshift({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      time: Date.now(),
+      label: label,
+      amount: amount // 符号付き(増加はプラス、減少はマイナス)
+    });
+    if (list.length > HISTORY_MAX_ENTRIES) list = list.slice(0, HISTORY_MAX_ENTRIES);
+    saveHistory(list);
+    renderHistory();
+  }
+  function renderHistory() {
+    var list = loadHistory();
+    var html;
+    if (list.length === 0) {
+      html = '<p class="history-empty">まだ履歴はありません。所持通貨からの反映やアンケート回答ボタンで記録されます。</p>';
+    } else {
+      html = list.map(function (entry) {
+        var isPlus = entry.amount >= 0;
+        var sign = isPlus ? '+' : '−';
+        return '<div class="history-row">' +
+          '<div class="history-main">' +
+            '<span class="history-time">' + historyTimeLabel(entry.time) + '</span>' +
+            '<span class="history-label">' + entry.label + '</span>' +
+          '</div>' +
+          '<span class="history-amount' + (isPlus ? ' is-plus' : ' is-minus') + '">' + sign + fmt(Math.abs(entry.amount)) + '本</span>' +
+          '<button type="button" class="history-undo-btn" data-history-id="' + entry.id + '">取り消す</button>' +
+        '</div>';
+      }).join('');
+    }
+    els.historyList.innerHTML = html;
+  }
+  els.historyList.addEventListener('click', function (ev) {
+    var btn = ev.target.closest ? ev.target.closest('.history-undo-btn') : null;
+    if (!btn) return;
+    try {
+      var id = btn.getAttribute('data-history-id');
+      var list = loadHistory();
+      var idx = -1;
+      for (var i = 0; i < list.length; i++) { if (list[i].id === id) { idx = i; break; } }
+      if (idx === -1) return;
+      var entry = list[idx];
+
+      var current = Math.max(0, parseFloat(els.current.value) || 0);
+      els.current.value = Math.round(Math.max(0, current - entry.amount) * 100) / 100;
+
+      list.splice(idx, 1);
+      saveHistory(list);
+      renderHistory();
+      update();
+      saveState();
+    } catch (err) { /* no-op */ }
+  });
+  els.historyClearBtn.addEventListener('click', function () {
+    if (!window.confirm('獲得履歴をすべて消去します。よろしいですか？(所持本数自体は変わりません)')) return;
+    saveHistory([]);
+    renderHistory();
+  });
+
   function update() {
     var target = Math.max(0, parseFloat(els.target.value) || 0);
     var current = Math.max(0, parseFloat(els.current.value) || 0);
@@ -1095,22 +1230,18 @@
     var dailyLine = '1日あたり ' + fmt(totalDaily) + '本' +
       (heartCost > 0 ? '　(獲得 ' + fmt(dailyRate) + '本 − ハート消費 ' + fmt(heartCost) + '本)' : '');
 
-    // 目標日(任意)からの逆算:期日までに必要な1日ペースを計算して表示用HTMLを組み立てる。
-    // 期日が未入力・過去日・目標達成済みの場合は何も表示しない。
-    var targetDateInfo = '';
+    // 目標日(任意)が設定されている場合、期日までに必要な1日ペースを算出する。
+    // 期日が未入力・過去日・目標達成済みの場合は算出しない(=スライダーの見込みを表示する通常モードにフォールバック)。
+    var hasTargetDate = false;
+    var targetDateObj = null;
+    var requiredDailyPace = 0;
     if (els.targetDate.value && remaining > 0) {
-      var targetDateObj = new Date(els.targetDate.value + 'T23:59:59');
+      targetDateObj = new Date(els.targetDate.value + 'T23:59:59');
       if (!isNaN(targetDateObj.getTime())) {
         var msUntilTarget = targetDateObj.getTime() - new Date().getTime();
         if (msUntilTarget > 0) {
-          var daysUntilTarget = msUntilTarget / 86400000;
-          var requiredDailyPace = remaining / daysUntilTarget;
-          var isOnPace = totalDaily >= requiredDailyPace;
-          targetDateInfo = '<div class="target-date-box">' +
-            jpDate(targetDateObj) + 'までに必要なペース　<strong>1日' + fmt(requiredDailyPace) + '本</strong><br>' +
-            '<span class="' + (isOnPace ? 'pace-ok' : 'pace-warn') + '">' +
-            (isOnPace ? '✓ 今のペースで間に合う見込みです' : '△ 今のペースだと1日' + fmt(requiredDailyPace - totalDaily) + '本足りません') +
-            '</span></div>';
+          hasTargetDate = true;
+          requiredDailyPace = remaining / (msUntilTarget / 86400000);
         }
       }
     }
@@ -1121,14 +1252,31 @@
       html =
         '<p class="state-message achieved">🎉 目標本数を達成しています！</p>' +
         '<p class="breakdown">所持 ' + fmt(current) + '本 ／ 目標 ' + fmt(target) + '本</p>';
+    } else if (hasTargetDate) {
+      // 目標日が設定されている場合は、そこから逆算した「1日に必要な本数」を主結果として表示する。
+      // スライダーの値を設定していなくても、目標日さえ入れれば必要なペースが分かるようにする。
+      var isOnPace = totalDaily >= requiredDailyPace;
+      html =
+        '<div class="hero-stat">1日 ' + fmt(requiredDailyPace) + '<span class="unit-small">本</span></div>' +
+        '<p class="stat-line">目標日　<strong>' + jpDate(targetDateObj) + '</strong>までに必要なペース</p>' +
+        '<p class="stat-line">残り　<strong>' + fmt(remaining) + '本</strong></p>' +
+        '<div class="target-date-box">' +
+          '今のペース(1日' + fmt(totalDaily) + '本)では　' +
+          '<span class="' + (isOnPace ? 'pace-ok' : 'pace-warn') + '">' +
+          (isOnPace ? '✓ 間に合う見込みです' : '△ 1日' + fmt(requiredDailyPace - totalDaily) + '本足りません') +
+          '</span></div>' +
+        '<p class="breakdown">' +
+          dailyLine + '<br>' +
+          '進捗 ' + Math.round(progressPct) + '%' +
+        '</p>' +
+        '<p class="note">※目標日までの残り日数をもとにした目安です。実際の日付とは前後する場合があります。</p>';
     } else if (totalDaily <= 0) {
       var warnMsg = heartCost > 0
         ? '1日の収支がプラスにならないため、目標に到達できません。<br>集める本数か、送るハートの本数を見直してください。'
         : '1日の獲得本数が0本のため計算できません。<br>集める本数のスライダーを見直してください。';
       html =
         '<p class="state-message warning">' + warnMsg + '</p>' +
-        '<p class="breakdown">残り ' + fmt(remaining) + '本<br>' + dailyLine + '</p>' +
-        targetDateInfo;
+        '<p class="breakdown">残り ' + fmt(remaining) + '本<br>' + dailyLine + '</p>';
     } else {
       var daysNeeded = Math.ceil(remaining / totalDaily);
       var weeksNeeded = Math.floor(daysNeeded / 7);
@@ -1139,7 +1287,6 @@
         (weeksNeeded > 0 ? '<p class="stat-line">（約' + weeksNeeded + '週間）</p>' : '') +
         '<p class="stat-line">達成予定日　<strong>' + jpDate(estDate) + '</strong>頃</p>' +
         '<p class="stat-line">残り　<strong>' + fmt(remaining) + '本</strong></p>' +
-        targetDateInfo +
         '<p class="breakdown">' +
           dailyLine + '<br>' +
           '進捗 ' + Math.round(progressPct) + '%' +
@@ -1160,10 +1307,21 @@
   // 「所持通貨から反映」ボタン: プロフィール共通の所持キャンドル数(wishOwnCurrency.candle)を
   // そのまま所持本数欄に反映する。アイテム所持管理などで既に入力済みの値を使い回せる。
   els.fillCurrentBtn.addEventListener('click', function () {
+    var before = Math.max(0, parseFloat(els.current.value) || 0);
     var c = pfLoadCurrency();
     els.current.value = c.candle;
     update();
     saveState();
+    addHistoryEntry('所持通貨から反映', c.candle - before);
+  });
+
+  // 「アンケートに回答した」ボタン: プレイヤーアンケートの回答報酬(3本)をそのまま加算する。
+  els.surveyBtn.addEventListener('click', function () {
+    var current = Math.max(0, parseFloat(els.current.value) || 0);
+    els.current.value = Math.round((current + 3) * 100) / 100;
+    update();
+    saveState();
+    addHistoryEntry('アンケート回答', 3);
   });
 
   // ---- 目標日:カスタムカレンダーピッカー ----
@@ -1286,6 +1444,7 @@
 
   loadState();
   update();
+  renderHistory();
 })();
 </script>
 </body>
