@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#E8850A">
+<meta name="color-scheme" content="light">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/app-icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ノマキャン">
+<title>ノマキャン計算機</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kaisei+Decol&family=Zen+Maru+Gothic:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FFF8EE;
+    --cream-deep: #FCEEDA;
+    --card-bg: #FFFFFF;
+    --amber: #E8850A;
+    --amber-light: #FFC168;
+    --amber-deep: #C56E06;
+    --text: #3A2E22;
+    --text-dim: #8C7A65;
+    --border: rgba(58,46,34,0.12);
+    --green: #3FA35C;
+    --red: #D9502B;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 90% 45% at 50% 0%, rgba(255,193,104,0.28), transparent 60%),
+      linear-gradient(180deg, var(--cream) 0%, var(--cream-deep) 100%);
+    background-attachment: fixed;
+    font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Yu Gothic', sans-serif;
+    color: var(--text);
+    position: relative;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 40px 20px 50px;
+  }
+
+  .page-head-top { display: flex; justify-content: flex-start; margin-bottom: 12px; }
+
+  .page-head { text-align: center; margin-bottom: 26px; }
+
+  .title-icon {
+    width: 40px; height: 46px;
+    margin: 0 auto 10px;
+    position: relative;
+  }
+  .title-icon::before {
+    content: '';
+    position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+    width: 20px; height: 24px; border-radius: 3px;
+    background: linear-gradient(180deg, #FFF9EC, #F5EEDB);
+    box-shadow: 0 1px 3px rgba(58,46,34,0.15);
+  }
+  .title-icon::after {
+    content: '';
+    position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+    width: 15px; height: 22px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    background: radial-gradient(circle at 50% 35%, #FFF6D8, var(--amber-light) 55%, var(--amber) 85%);
+    box-shadow: 0 0 12px 3px rgba(232,133,10,0.5);
+    animation: title-flicker 2.6s ease-in-out infinite;
+  }
+
+  @keyframes title-flicker {
+    0%, 100% { transform: translateX(-50%) rotate(0deg) scale(1); }
+    25% { transform: translateX(-50%) rotate(-3deg) scale(1.03,0.97); }
+    50% { transform: translateX(-50%) rotate(3deg) scale(0.97,1.03); }
+    75% { transform: translateX(-50%) rotate(-2deg) scale(1.02,0.98); }
+  }
+
+  h1 {
+    font-family: 'Kaisei Decol', serif;
+    font-size: 25px;
+    margin: 0 0 6px;
+    letter-spacing: 0.03em;
+  }
+
+  .subtitle { color: var(--text-dim); font-size: 13.5px; margin: 0; }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 22px 20px;
+    margin-bottom: 18px;
+    box-shadow: 0 6px 22px rgba(58,46,34,0.07);
+  }
+  .card.has-open-popup { position: relative; z-index: 30; }
+
+  .card h2 {
+    font-family: 'Kaisei Decol', serif;
+    font-size: 16.5px;
+    font-weight: 400;
+    margin: 0 0 16px;
+    color: var(--amber-deep);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  .field-hint { font-size: 11.5px; color: var(--text-dim); margin-top: 6px; line-height: 1.6; }
+
+  .input-suffix { position: relative; }
+
+  input[type="number"] {
+    width: 100%;
+    padding: 12px 42px 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: #FCFAF5;
+    color: var(--text);
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 16px;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]:focus {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(232,133,10,0.16);
+  }
+
+  .unit {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    font-size: 13px; color: var(--text-dim); pointer-events: none;
+  }
+
+  .fill-current-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 8px;
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--cream);
+    color: var(--amber-deep);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .fill-current-btn:hover { background: var(--cream-deep); border-color: var(--amber-light); }
+
+  .date-picker { position: relative; }
+
+  .date-picker-trigger {
+    width: 100%;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: #FCFAF5;
+    color: var(--text-dim);
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .date-picker-trigger.has-value { color: var(--text); }
+  .date-picker-trigger:hover { border-color: var(--amber-light); }
+  .date-picker-trigger.is-active {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(232,133,10,0.16);
+  }
+  .date-picker-icon { font-size: 14px; opacity: .75; margin-left: 8px; flex-shrink: 0; }
+
+  .date-picker-popup {
+    position: absolute; left: 0; right: 0; top: calc(100% + 8px); z-index: 20;
+    background: #FFFDF8;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 14px 34px rgba(58,46,34,0.18);
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transform: translateY(-6px);
+    transition: opacity .16s ease, transform .16s ease, visibility .16s;
+  }
+  .date-picker-popup.is-open { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
+
+  .date-picker-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .date-picker-month { font-family: 'Kaisei Decol', serif; font-size: 15px; color: var(--text); }
+  .date-picker-nav {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--cream);
+    color: var(--amber-deep);
+    font-size: 16px; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .date-picker-nav:hover { border-color: var(--amber); background: rgba(232,133,10,0.1); }
+
+  .date-picker-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    text-align: center; font-size: 11px; color: var(--text-dim); margin-bottom: 4px;
+  }
+  .date-picker-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .date-picker-cell {
+    aspect-ratio: 1 / 1;
+    display: flex; align-items: center; justify-content: center;
+    border: none; border-radius: 8px; background: none;
+    color: var(--text);
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+  }
+  .date-picker-cell.is-empty { cursor: default; }
+  .date-picker-cell:not(.is-empty):not(.is-past):hover { background: rgba(232,133,10,0.12); }
+  .date-picker-cell.is-today { box-shadow: inset 0 0 0 1px var(--amber); }
+  .date-picker-cell.is-selected {
+    background: linear-gradient(160deg, var(--amber-light), var(--amber));
+    color: #fff; font-weight: 700; box-shadow: none;
+  }
+  .date-picker-cell.is-past, .date-picker-cell:disabled { color: var(--text-dim); opacity: .35; cursor: not-allowed; }
+
+  .date-picker-clear {
+    display: block; width: 100%; margin-top: 10px; padding-top: 8px;
+    border: none; border-top: 1px dashed var(--border);
+    background: none; color: var(--text-dim);
+    font-family: inherit; font-size: 12px; text-align: center; cursor: pointer;
+  }
+  .date-picker-clear:hover { color: var(--red); }
+
+  .slider-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .slider-row label { margin-bottom: 0; }
+  .slider-readout { font-size: 12.5px; color: var(--amber-deep); white-space: nowrap; font-weight: 700; }
+
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none; appearance: none;
+    height: 6px; border-radius: 3px;
+    background: linear-gradient(90deg, var(--amber) var(--fill, 40%), var(--border) var(--fill, 40%));
+    outline: none;
+    margin: 10px 0 4px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, var(--amber-light), var(--amber));
+    box-shadow: 0 0 10px rgba(232,133,10,0.5), 0 2px 4px rgba(58,46,34,0.2);
+    cursor: pointer;
+    border: 2px solid #fff;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, var(--amber-light), var(--amber));
+    box-shadow: 0 0 10px rgba(232,133,10,0.5), 0 2px 4px rgba(58,46,34,0.2);
+    cursor: pointer;
+    border: 2px solid #fff;
+  }
+
+  .divider { border: none; border-top: 1px dashed var(--border); margin: 20px 0 16px; }
+
+  .toggle-field { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .toggle-text { display: flex; flex-direction: column; gap: 3px; }
+  .toggle-title { font-size: 14px; color: var(--text); font-weight: 500; }
+  .toggle-sub { font-size: 12px; color: var(--text-dim); }
+
+  .note { font-size: 12px; color: var(--text-dim); margin: 12px 0 0; line-height: 1.6; }
+  .note a { color: var(--amber-deep); }
+
+  .predict-box { margin-top: 6px; }
+
+  .result-card { text-align: center; border-color: rgba(232,133,10,0.25); }
+
+  .gauge-wrap { display: flex; justify-content: center; align-items: flex-end; height: 160px; margin: 4px 0 18px; }
+  .candle { position: relative; width: 46px; height: 130px; }
+  .candle-body {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 90px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: linear-gradient(90deg, rgba(58,46,34,0.05), rgba(58,46,34,0.01) 45%, rgba(58,46,34,0.06));
+    overflow: hidden;
+  }
+  .candle-fill {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 0%;
+    background: linear-gradient(180deg, var(--amber-light), var(--amber) 65%, var(--amber-deep));
+    transition: height 0.7s cubic-bezier(.22,1,.36,1);
+  }
+  .candle-fill::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: rgba(255,255,255,0.4); }
+  .wick { position: absolute; left: 50%; bottom: 90px; width: 3px; height: 12px; background: #6b5745; border-radius: 2px; margin-left: -1.5px; }
+  .flame {
+    position: absolute; left: 50%; bottom: 98px; width: 18px; height: 24px; margin-left: -9px;
+    border-radius: 0 50% 50% 50%;
+    background: radial-gradient(circle at 50% 65%, #fff6d8, var(--amber-light) 40%, var(--amber) 72%, #c56e06 100%);
+    box-shadow: 0 0 16px 4px rgba(232,133,10,0.45), 0 0 30px 10px rgba(232,133,10,0.18);
+    transform: rotate(45deg);
+    transform-origin: bottom center;
+    animation: flicker 2.4s ease-in-out infinite;
+  }
+  @keyframes flicker {
+    0%, 100% { transform: rotate(45deg) scale(1); }
+    25% { transform: rotate(41deg) scale(1.06,0.94); }
+    50% { transform: rotate(49deg) scale(0.94,1.06); }
+    75% { transform: rotate(44deg) scale(1.03,0.97); }
+  }
+  .spark {
+    position: absolute; left: 50%; bottom: 118px; width: 3px; height: 3px; border-radius: 50%;
+    background: var(--amber-light); opacity: 0;
+    animation: float-up 3.2s ease-in infinite;
+  }
+  .spark:nth-child(1){ margin-left: -8px; animation-delay: 0s; }
+  .spark:nth-child(2){ margin-left: 4px;  animation-delay: 1.1s; }
+  .spark:nth-child(3){ margin-left: -2px; animation-delay: 2.1s; }
+  @keyframes float-up {
+    0% { transform: translate(0,0); opacity: 0; }
+    15% { opacity: 0.9; }
+    80% { opacity: 0.15; }
+    100% { transform: translate(6px, -46px); opacity: 0; }
+  }
+
+  .hero-stat { font-family: 'Kaisei Decol', serif; font-size: 38px; color: var(--amber-deep); margin: 2px 0 4px; }
+  .hero-stat .unit-small { font-size: 17px; margin-left: 2px; }
+  .stat-line { font-size: 14px; color: var(--text-dim); margin: 5px 0; }
+  .stat-line strong { color: var(--text); font-weight: 700; }
+  .breakdown { font-size: 12.5px; color: var(--text-dim); margin-top: 12px; line-height: 1.8; }
+
+  .state-message { font-size: 14.5px; line-height: 1.8; padding: 6px 4px 2px; color: var(--text-dim); }
+  .state-message.achieved { color: var(--amber-deep); font-size: 15.5px; }
+  .state-message.warning { color: var(--red); }
+
+  .target-date-box {
+    margin: 10px 0; padding: 10px 12px; border-radius: 10px;
+    background: var(--cream); border: 1px solid var(--border);
+    font-size: 13px; color: var(--text-dim); line-height: 1.7; text-align: left;
+  }
+  .target-date-box strong { color: var(--text); font-weight: 700; }
+  .pace-ok { color: var(--green); }
+  .pace-warn { color: var(--red); }
+
+  footer { text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 24px; line-height: 1.8; opacity: 0.85; }
+  footer a { color: var(--amber-deep); }
+  footer a:hover { color: var(--amber); }
+
+  a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  @media (max-width: 360px) { .wrap { padding: 30px 14px 44px; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+
+  /* ═══ プロフィール（保存枠）切り替え ═══ */
+  .pf-bar {
+    max-width: 460px; margin: 0 auto 14px;
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 14px; padding: 10px 16px;
+    font-size: 13.5px; color: var(--text-dim); text-align: center; cursor: pointer;
+  }
+  .pf-bar b { color: var(--amber-deep); font-weight: 700; }
+  .pf-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(58,46,34,0.35); z-index: 1000;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .pf-modal-overlay.is-visible { display: flex; }
+  .pf-modal-card {
+    width: 100%; max-width: 360px; max-height: 80vh; overflow-y: auto;
+    background: #FFFDF8; border: 1px solid var(--border); border-radius: 20px; padding: 20px;
+    box-shadow: 0 20px 50px rgba(58,46,34,0.25);
+  }
+  .pf-modal-card h3 { margin: 0 0 14px; font-family: 'Kaisei Decol', serif; font-size: 18px; color: var(--text); }
+  .pf-row { display: flex; align-items: center; gap: 8px; padding: 10px 4px; border-bottom: 1px solid var(--border); }
+  .pf-row:last-of-type { border-bottom: none; }
+  .pf-row-name { flex: 1; font-size: 14.5px; color: var(--text); cursor: pointer; word-break: break-all; }
+  .pf-row.active .pf-row-name { color: var(--amber-deep); font-weight: 700; }
+  .pf-icon-btn {
+    background: var(--cream); border: 1px solid var(--border); color: var(--text-dim);
+    border-radius: 8px; padding: 5px 9px; font-size: 13px; cursor: pointer;
+  }
+  .pf-icon-btn:hover { background: var(--cream-deep); }
+  .pf-color-input { width: 28px; height: 28px; padding: 0; border: 1px solid var(--border); border-radius: 50%;
+    background: none; cursor: pointer; flex-shrink: 0; overflow: hidden; }
+  .pf-color-input::-webkit-color-swatch-wrapper { padding: 0; }
+  .pf-color-input::-webkit-color-swatch { border: none; border-radius: 50%; }
+  .pf-color-input::-moz-color-swatch { border: none; border-radius: 50%; }
+  .pf-color-clear-btn { font-size: 10px; }
+  body { background:
+      linear-gradient(var(--pf-tint-rgb, transparent), var(--pf-tint-rgb, transparent)),
+      radial-gradient(ellipse 90% 45% at 50% 0%, rgba(255,193,104,0.28), transparent 60%),
+      linear-gradient(180deg, var(--cream) 0%, var(--cream-deep) 100%) !important; }
+  .pf-add-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .pf-input {
+    flex: 1; min-width: 0;
+    background: var(--cream); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; color: var(--text); font-size: 14px; font-family: inherit;
+  }
+  .pf-input::placeholder { color: var(--text-dim); }
+  .pf-add-btn {
+    background: linear-gradient(160deg, var(--amber-light), var(--amber));
+    border: none; color: #fff; font-weight: 700; border-radius: 8px; padding: 8px 14px; font-size: 14px; cursor: pointer;
+  }
+  .pf-hint { margin: 12px 0 0; font-size: 11.5px; color: var(--text-dim); line-height: 1.5; }
+  .pf-currency-section { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .pf-currency-title { font-size: 12px; font-weight: 700; color: var(--text-dim); margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.4px;
+    display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+  .pf-currency-toggle-label { font-size: 11px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+  .pf-currency-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 2px; }
+  .pf-currency-label { font-size: 13px; color: var(--text); }
+  .pf-currency-row .pf-currency-input {
+    width: 90px; background: var(--cream); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 8px; font-size: 14px; color: var(--text); font-family: inherit; outline: none; box-sizing: border-box; text-align: right;
+  }
+  .pf-currency-row .pf-currency-input:focus { border-color: var(--amber); }
+  .pf-close-btn {
+    display: block; width: 100%; margin-top: 16px;
+    background: var(--cream); border: 1px solid var(--border); color: var(--text);
+    border-radius: 10px; padding: 10px; font-size: 14px; cursor: pointer;
+  }
+  .pf-row-input {
+    flex: 1; background: var(--cream); border: 1px solid var(--amber); border-radius: 8px;
+    padding: 6px 8px; color: var(--text); font-size: 14px; font-family: inherit; min-width: 0;
+  }
+  .pf-row-confirm-text { flex: 1; font-size: 12.5px; color: var(--text); line-height: 1.4; }
+  .pf-row-btn-ok { background: var(--amber); color: #fff; border: none; font-weight: 700; }
+  .pf-row-btn-danger { background: var(--red); color: #fff; border: none; }
+
+  /* ═══ サイドバーレイアウト ═══ */
+  .app-layout { display: flex; gap: 16px; align-items: flex-start; width: 100%; }
+  .sidebar {
+    width: 180px; flex-shrink: 0; position: sticky; top: 20px; display: none;
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; padding: 16px 14px;
+    box-shadow: 0 6px 22px rgba(58,46,34,0.07);
+  }
+  .sidebar.sidebar-open {
+    display: flex !important; flex-direction: column; position: fixed; top: 0; left: 0;
+    height: 100%; width: 250px; z-index: 500; overflow-y: auto;
+    border-radius: 0 18px 18px 0; box-shadow: 4px 0 30px rgba(58,46,34,0.25);
+    background: #FFFDF8;
+  }
+  .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(58,46,34,0.32); z-index: 499; animation: sidebarFadeIn 0.2s ease; }
+  .sidebar-overlay.is-visible { display: block; }
+  @keyframes sidebarFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .main-content-wrapper { flex: 1; min-width: 0; width: 100%; }
+  .sidebar-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .sidebar-section-label { font-size: 10.5px; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
+  .sidebar-nav-link {
+    display: flex; align-items: center; gap: 9px; padding: 10px 12px; border-radius: 10px;
+    text-decoration: none; color: var(--text); font-size: 13px; font-weight: 500;
+    transition: background 0.15s, color 0.15s; margin-bottom: 3px;
+  }
+  .sidebar-nav-link:hover { background: var(--cream); }
+  .sidebar-nav-link.current-tool { background: rgba(232,133,10,0.12); color: var(--amber-deep); font-weight: 700; }
+  .sidebar-toggle-btn {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 7px 14px;
+    font-size: 13px; font-family: inherit; cursor: pointer; color: var(--text);
+    display: inline-flex; align-items: center; gap: 6px; font-weight: 500;
+  }
+  .sidebar-toggle-btn:hover { border-color: var(--amber); }
+  .sidebar-close-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-dim); padding: 0; line-height: 1; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="page-head-top">
+    <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn">☰ ツール</button>
+  </div>
+
+  <header class="page-head">
+    <div class="title-icon" aria-hidden="true"></div>
+    <h1>ノマキャン計算機</h1>
+    <p class="subtitle">Sky 星を紡ぐ子どもたち・目標本数まであと何日？</p>
+  </header>
+
+  <div class="pf-bar" id="pfBar" onclick="pfOpenModal()"></div>
+
+  <div class="pf-modal-overlay" id="pfModalOverlay">
+    <div class="pf-modal-card">
+      <h3>🗂️ プロフィール（保存枠）</h3>
+      <div id="pfModalBody"></div>
+      <div class="pf-add-row">
+        <input type="text" id="pfNewProfileInput" class="pf-input" placeholder="新しいプロフィール名" maxlength="20">
+        <button type="button" class="pf-add-btn" onclick="pfAddProfile()">追加</button>
+      </div>
+      <p class="pf-hint">プロフィールを切り替えると、目標設定などがそのプロフィール専用の保存内容に切り替わります。サブアカウントなど複数アカウントをお持ちの方にご利用いただけます。</p>
+      <div class="pf-currency-section">
+        <div class="pf-currency-title" onclick="pfToggleCurrency()">
+          <span>💰 所持通貨</span>
+          <span class="pf-currency-toggle-label" id="pfCurrencyToggleLabel">閉じる ▲</span>
+        </div>
+        <div id="pfCurrencyBody"></div>
+      </div>
+      <button type="button" class="pf-close-btn" onclick="pfCloseModal()">閉じる</button>
+    </div>
+  </div>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="app-layout">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <div class="sidebar-section-label">🔗 関連ツール</div>
+        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn">×</button>
+      </div>
+      <nav>
+        <a href="https://taipak5000.github.io/tai-nomacan/" class="sidebar-nav-link current-tool">
+          🕯️ ノマキャン計算機
+        </a>
+        <a href="https://taipak5000.github.io/tai-nomacan-pro/" class="sidebar-nav-link">
+          🕯️ ノマキャン計算機プロ
+        </a>
+        <a href="https://taipak5000.github.io/star-candle/" class="sidebar-nav-link">
+          🕯️✨ 星のキャンドル計算機
+        </a>
+        <a href="https://taipak5000.github.io/tai-item/" class="sidebar-nav-link">
+          📁 アイテム所持管理
+        </a>
+        <a href="https://taipak5000.github.io/share/" class="sidebar-nav-link">
+          📍 創作物管理ツール
+        </a>
+        <a href="https://taipak5000.github.io/companion/" class="sidebar-nav-link">
+          ✨ 精霊同行ツール
+        </a>
+        <a href="https://taipak5000.github.io/wings/" class="sidebar-nav-link">
+          🪽 羽トラッカー
+        </a>
+        <a href="https://taipak5000.github.io/tai-transfer/" class="sidebar-nav-link">
+          🔄 データ引継ぎ
+        </a>
+      </nav>
+    </aside>
+
+    <div class="main-content-wrapper">
+
+  <section class="card">
+    <h2>🎯 目標を設定</h2>
+    <div class="field">
+      <label for="target">目標本数</label>
+      <div class="input-suffix">
+        <input type="number" id="target" inputmode="decimal" min="0" step="1" placeholder="例: 200">
+        <span class="unit">本</span>
+      </div>
+    </div>
+    <div class="field">
+      <label for="current">所持本数</label>
+      <div class="input-suffix">
+        <input type="number" id="current" inputmode="decimal" min="0" step="1" placeholder="例: 30">
+        <span class="unit">本</span>
+      </div>
+      <button type="button" class="fill-current-btn" id="fillCurrentBtn">🔄 所持通貨から反映</button>
+    </div>
+    <div class="field">
+      <label for="targetDateTrigger">目標日(任意)</label>
+      <div class="date-picker" id="datePicker">
+        <button type="button" class="date-picker-trigger" id="targetDateTrigger" aria-haspopup="true" aria-expanded="false">
+          <span id="targetDateTriggerText">日付を選択(任意)</span>
+          <span class="date-picker-icon" aria-hidden="true">📅</span>
+        </button>
+        <div class="date-picker-popup" id="datePickerPopup">
+          <div class="date-picker-header">
+            <button type="button" class="date-picker-nav" id="datePickerPrev" aria-label="前の月">‹</button>
+            <span class="date-picker-month" id="datePickerMonthLabel"></span>
+            <button type="button" class="date-picker-nav" id="datePickerNext" aria-label="次の月">›</button>
+          </div>
+          <div class="date-picker-weekdays">
+            <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+          </div>
+          <div class="date-picker-grid" id="datePickerGrid"></div>
+          <button type="button" class="date-picker-clear" id="datePickerClear">選択をクリア</button>
+        </div>
+      </div>
+      <input type="date" id="targetDate" style="display:none" tabindex="-1" aria-hidden="true">
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>🕯️ 1日の集めペース</h2>
+    <div class="field">
+      <div class="slider-row">
+        <label for="dailyRate">1日にだいたい集めている本数</label>
+        <span class="slider-readout" id="dailyRateReadout">15本</span>
+      </div>
+      <input type="range" id="dailyRate" min="0" max="40" step="1" value="15">
+      <p class="field-hint">デイリークエストや光の収集などをこなした場合の、ざっくりした目安で大丈夫です。</p>
+    </div>
+    <hr class="divider">
+    <div class="field">
+      <div class="toggle-field">
+        <div class="toggle-text">
+          <span class="toggle-title">毎日ハートを送っている</span>
+          <span class="toggle-sub">ハート1本につき1日キャンドル3本消費</span>
+        </div>
+      </div>
+      <div class="input-suffix" style="margin-top:10px;">
+        <input type="number" id="heartsToSend" inputmode="numeric" min="0" step="1" placeholder="0">
+        <span class="unit">本/日</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card result-card">
+    <h2 style="justify-content:center;">📊 結果</h2>
+
+    <div class="gauge-wrap">
+      <div class="candle">
+        <span class="spark" aria-hidden="true"></span>
+        <span class="spark" aria-hidden="true"></span>
+        <span class="spark" aria-hidden="true"></span>
+        <div class="flame" aria-hidden="true"></div>
+        <div class="wick" aria-hidden="true"></div>
+        <div class="candle-body">
+          <div class="candle-fill" id="candleFill"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="resultContent"></div>
+  </section>
+
+    </div> <!-- /.main-content-wrapper -->
+  </div> <!-- /.app-layout -->
+
+  <footer>
+    このサイトはSky 星を紡ぐ子どもたちの非公式ファンサイトです。thatgamecompanyは一切関与していません。<br>
+    作成・ご意見: <a href="https://x.com/Skyzztai" target="_blank" rel="noopener noreferrer">@Skyzztai</a><br>
+    <a href="https://taipak5000.github.io/tai-info/" target="_blank" rel="noopener noreferrer">⚙️ 設定・更新情報・クレジット・プライバシーポリシー</a>
+  </footer>
+</div>
+
+<script>
+(function () {
+  // ═══ プロフィール（保存枠）管理: taipak5000.github.io 配下の各ツール共通 ═══
+  var PROFILES_KEY = 'skyProfiles_v1';
+  var ACTIVE_PROFILE_KEY = 'skyActiveProfile_v1';
+  var DEFAULT_PROFILE_ID = 'default';
+
+  // id はこのファイル内で常に「英数字・アンダースコア・ハイフンのみ」で生成しているため、
+  // それ以外の形式は不正な値（データ引継ぎ/バックアップの改ざん等）とみなして除外する。
+  // onclick属性へid をそのまま埋め込んでいる箇所があるため、ここで弾いておくことでXSSを防ぐ。
+  function pfIsSafeId(id) {
+    return typeof id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(id);
+  }
+
+  // アカウントカラー（任意）。#RRGGBB 形式のみを許可する。
+  function pfIsSafeColor(c) {
+    return typeof c === 'string' && /^#[0-9A-Fa-f]{6}$/.test(c);
+  }
+
+  function pfLoadProfiles() {
+    try {
+      var list = JSON.parse(localStorage.getItem(PROFILES_KEY));
+      if (!Array.isArray(list)) return null;
+      list = list.filter(function (p) { return p && pfIsSafeId(p.id) && typeof p.name === 'string'; }).map(function (p) {
+        if (p.color !== undefined && !pfIsSafeColor(p.color)) {
+          var rest = {}; for (var k in p) { if (k !== 'color') rest[k] = p[k]; } return rest;
+        }
+        return p;
+      });
+      if (list.length > 0) return list;
+    } catch (e) { /* noop */ }
+    return null;
+  }
+  function pfSaveProfiles(list) {
+    try { localStorage.setItem(PROFILES_KEY, JSON.stringify(list)); } catch (e) { /* noop */ }
+  }
+  function pfEnsureInit() {
+    var list = pfLoadProfiles();
+    if (!list) {
+      list = [{ id: DEFAULT_PROFILE_ID, name: 'メイン' }];
+      pfSaveProfiles(list);
+    }
+    try {
+      if (!localStorage.getItem(ACTIVE_PROFILE_KEY)) localStorage.setItem(ACTIVE_PROFILE_KEY, DEFAULT_PROFILE_ID);
+    } catch (e) { /* noop */ }
+    return list;
+  }
+  function pfGetActiveId() {
+    try { return localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE_ID; } catch (e) { return DEFAULT_PROFILE_ID; }
+  }
+  function pfGetActiveProfile() {
+    var list = pfLoadProfiles() || [{ id: DEFAULT_PROFILE_ID, name: 'メイン' }];
+    var id = pfGetActiveId();
+    var found = null;
+    for (var i = 0; i < list.length; i++) { if (list[i].id === id) { found = list[i]; break; } }
+    return found || list[0];
+  }
+
+  // プロフィールごとのアカウントカラー（任意）。フォントやボタンではなく画面背景への
+  // うっすらとした色重ねとして反映する。CSS変数名・仕組みは全サイト共通。
+  var PF_TINT_VAR = '--pf-tint-rgb';
+  function pfHexToRgb(hex) {
+    var m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+    return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : null;
+  }
+  function pfApplyThemeColor(hex) {
+    var root = document.documentElement.style;
+    if (!hex || !pfIsSafeColor(hex)) {
+      root.removeProperty(PF_TINT_VAR);
+      return;
+    }
+    var c = pfHexToRgb(hex);
+    root.setProperty(PF_TINT_VAR, 'rgba(' + c.r + ', ' + c.g + ', ' + c.b + ', 0.07)');
+  }
+  window.addEventListener('storage', function (e) {
+    if (e.key === PROFILES_KEY) pfApplyThemeColor(pfGetActiveProfile().color);
+  });
+  function pfSetProfileColor(id, color) {
+    if (!pfIsSafeColor(color)) return;
+    var list = pfEnsureInit();
+    var p = null;
+    for (var i = 0; i < list.length; i++) { if (list[i].id === id) { p = list[i]; break; } }
+    if (!p) return;
+    p.color = color;
+    pfSaveProfiles(list);
+    if (id === pfGetActiveId()) pfApplyThemeColor(color);
+  }
+  function pfClearProfileColor(id) {
+    var list = pfEnsureInit();
+    var p = null;
+    for (var i = 0; i < list.length; i++) { if (list[i].id === id) { p = list[i]; break; } }
+    if (!p) return;
+    delete p.color;
+    pfSaveProfiles(list);
+    if (id === pfGetActiveId()) pfApplyThemeColor(null);
+    pfRenderModal();
+  }
+  function nsKey(rawKey) {
+    var id = pfGetActiveId();
+    return id === DEFAULT_PROFILE_ID ? rawKey : (rawKey + '__p_' + id);
+  }
+
+  pfEnsureInit();
+
+  function pfSwitchProfile(id) {
+    if (id === pfGetActiveId()) { pfCloseModal(); return; }
+    try { localStorage.setItem(ACTIVE_PROFILE_KEY, id); } catch (e) { /* noop */ }
+    location.reload();
+  }
+
+  function pfAddProfile() {
+    var input = document.getElementById('pfNewProfileInput');
+    var name = ((input && input.value) || '').trim();
+    if (!name) return;
+    var list = pfLoadProfiles() || [];
+    var id = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    list.push({ id: id, name: name.slice(0, 20) });
+    pfSaveProfiles(list);
+    if (input) input.value = '';
+    pfSwitchProfile(id);
+  }
+
+  function pfDeleteProfile(id) {
+    var list = pfLoadProfiles() || [];
+    if (list.length <= 1) return;
+    var remaining = list.filter(function (p) { return p.id !== id; });
+    pfSaveProfiles(remaining);
+    try {
+      var toRemove = [];
+      for (var k = 0; k < localStorage.length; k++) {
+        var key = localStorage.key(k);
+        if (key && key.indexOf('__p_' + id) !== -1) toRemove.push(key);
+      }
+      toRemove.forEach(function (key) { localStorage.removeItem(key); });
+    } catch (e) { /* noop */ }
+    if (pfGetActiveId() === id) {
+      try { localStorage.setItem(ACTIVE_PROFILE_KEY, remaining[0].id); } catch (e) { /* noop */ }
+      location.reload();
+      return;
+    }
+    pfRenderModal();
+    pfRenderBar();
+  }
+
+  function pfEscapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function pfRenderBar() {
+    var active = pfGetActiveProfile();
+    pfApplyThemeColor(active.color);
+    var bar = document.getElementById('pfBar');
+    if (!bar) return;
+    bar.innerHTML = '🗂️ <b>' + pfEscapeHtml(active.name) + '</b>&nbsp;に切替中（タップで切替）';
+  }
+
+  // 名前変更中・削除確認中のプロフィールID（ポップアップブロックの影響を受ける
+  // prompt()/confirm() は使わず、モーダル内にインラインで表示する）
+  var pfEditingId = null;
+  var pfDeletingId = null;
+
+  function pfRenderModal() {
+    var body = document.getElementById('pfModalBody');
+    if (!body) return;
+    var list = pfLoadProfiles() || [];
+    var activeId = pfGetActiveId();
+    var html = '';
+    list.forEach(function (p) {
+      if (pfEditingId === p.id) {
+        html += '<div class="pf-row" style="flex-wrap: wrap;">' +
+          '<input type="text" class="pf-row-input" id="pfEditInput" value="' + pfEscapeHtml(p.name) + '" maxlength="20" ' +
+          'onkeydown="if(event.key===\'Enter\') pfConfirmRenameInline(\'' + p.id + '\'); if(event.key===\'Escape\') pfCancelRowState();">' +
+          '<button type="button" class="pf-icon-btn pf-row-btn-ok" onclick="pfConfirmRenameInline(\'' + p.id + '\')">保存</button>' +
+          '<button type="button" class="pf-icon-btn" onclick="pfCancelRowState()">取消</button>' +
+          '</div>';
+        return;
+      }
+      if (pfDeletingId === p.id) {
+        html += '<div class="pf-row" style="flex-wrap: wrap;">' +
+          '<span class="pf-row-confirm-text">「' + pfEscapeHtml(p.name) + '」を削除しますか？このプロフィールの保存データも削除されます。</span>' +
+          '<button type="button" class="pf-icon-btn pf-row-btn-danger" onclick="pfConfirmDeleteInline(\'' + p.id + '\')">削除</button>' +
+          '<button type="button" class="pf-icon-btn" onclick="pfCancelRowState()">取消</button>' +
+          '</div>';
+        return;
+      }
+      var colorVal = pfIsSafeColor(p.color) ? p.color : '#E8850A';
+      html += '<div class="pf-row' + (p.id === activeId ? ' active' : '') + '">' +
+        '<input type="color" class="pf-color-input" value="' + colorVal + '" title="アカウントカラー" onchange="pfSetProfileColor(\'' + p.id + '\', this.value)">' +
+        '<span class="pf-row-name" onclick="pfSwitchProfile(\'' + p.id + '\')">' + (p.id === activeId ? '✅ ' : '') + pfEscapeHtml(p.name) + '</span>' +
+        (p.color ? '<button type="button" class="pf-icon-btn pf-color-clear-btn" title="カラーを初期値に戻す" onclick="pfClearProfileColor(\'' + p.id + '\')">↺</button>' : '') +
+        '<button type="button" class="pf-icon-btn" onclick="pfStartRename(\'' + p.id + '\')">✏️</button>' +
+        (list.length > 1 ? '<button type="button" class="pf-icon-btn" onclick="pfStartDelete(\'' + p.id + '\')">🗑️</button>' : '') +
+        '</div>';
+    });
+    body.innerHTML = html;
+
+    if (pfEditingId !== null) {
+      var input = document.getElementById('pfEditInput');
+      if (input) { input.focus(); input.select(); }
+    }
+  }
+
+  function pfStartRename(id) {
+    pfDeletingId = null;
+    pfEditingId = id;
+    pfRenderModal();
+  }
+
+  function pfStartDelete(id) {
+    pfEditingId = null;
+    pfDeletingId = id;
+    pfRenderModal();
+  }
+
+  function pfCancelRowState() {
+    pfEditingId = null;
+    pfDeletingId = null;
+    pfRenderModal();
+  }
+
+  function pfConfirmRenameInline(id) {
+    var input = document.getElementById('pfEditInput');
+    var next = input ? input.value : '';
+    pfEditingId = null;
+    if (next && next.trim()) {
+      var list = pfLoadProfiles() || [];
+      var target = null;
+      for (var i = 0; i < list.length; i++) { if (list[i].id === id) { target = list[i]; break; } }
+      if (target) {
+        target.name = next.trim().slice(0, 20);
+        pfSaveProfiles(list);
+        pfRenderBar();
+      }
+    }
+    pfRenderModal();
+  }
+
+  function pfConfirmDeleteInline(id) {
+    pfDeletingId = null;
+    pfDeleteProfile(id);
+  }
+
+  // ═══ 💰 所持通貨の統一管理（プロフィール切替モーダル内、全サイト共通） ═══
+  // candle/heartはitemのwishOwnCurrencyを、seasonCandleはcompanionの記録
+  // データを直接読み書きし、二重管理を避ける。昇華キャンドル・シーズン
+  // ハート・イベント通貨はどのサイトにも記録先が無いため新規キーで管理する。
+  var PF_CURRENCY_FIELDS = [
+    { key: 'candle',         icon: '🕯️', label: 'キャンドル' },
+    { key: 'heart',          icon: '💗', label: 'ハート' },
+    { key: 'ascendedCandle', icon: '🕯️✨', label: '星のキャンドル' },
+    { key: 'seasonCandle',   icon: '🕯️🍂', label: 'シーズンキャンドル' },
+    { key: 'giftPass',       icon: '🎟️', label: 'ギフトパス' }
+  ];
+  function pfCompanionDataKey() {
+    var id = pfGetActiveId();
+    return id === DEFAULT_PROFILE_ID ? 'sky_companion_v4_data' : ('sky_companion_v4_data__' + id);
+  }
+  function pfLoadCurrency() {
+    var wish, companionData, extra;
+    try { wish = JSON.parse(localStorage.getItem(nsKey('wishOwnCurrency'))) || {}; } catch (e) { wish = {}; }
+    try { companionData = JSON.parse(localStorage.getItem(pfCompanionDataKey())) || {}; } catch (e) { companionData = {}; }
+    try { extra = JSON.parse(localStorage.getItem(nsKey('skyCurrencyExtra_v1'))) || {}; } catch (e) { extra = {}; }
+    if (wish.starCandle === undefined && extra.ascendedCandle) {
+      wish.starCandle = extra.ascendedCandle;
+      localStorage.setItem(nsKey('wishOwnCurrency'), JSON.stringify(wish));
+    }
+    return {
+      candle: wish.candle || 0,
+      heart: wish.heart || 0,
+      seasonCandle: companionData.ownedCandles || 0,
+      ascendedCandle: wish.starCandle || 0,
+      giftPass: extra.giftPass || 0
+    };
+  }
+  function pfSaveCurrencyField(field, rawValue) {
+    var n = Math.max(0, Number(rawValue) || 0);
+    if (field === 'candle' || field === 'heart' || field === 'ascendedCandle') {
+      var key = nsKey('wishOwnCurrency');
+      var wish;
+      try { wish = JSON.parse(localStorage.getItem(key)) || {}; } catch (e) { wish = {}; }
+      wish[field === 'ascendedCandle' ? 'starCandle' : field] = n;
+      localStorage.setItem(key, JSON.stringify(wish));
+    } else if (field === 'seasonCandle') {
+      var ckey = pfCompanionDataKey();
+      var data;
+      try { data = JSON.parse(localStorage.getItem(ckey)) || {}; } catch (e) { data = {}; }
+      data.ownedCandles = n;
+      localStorage.setItem(ckey, JSON.stringify(data));
+    } else {
+      var ekey = nsKey('skyCurrencyExtra_v1');
+      var extra;
+      try { extra = JSON.parse(localStorage.getItem(ekey)) || {}; } catch (e) { extra = {}; }
+      extra[field] = n;
+      localStorage.setItem(ekey, JSON.stringify(extra));
+    }
+  }
+  function pfRenderCurrency() {
+    var body = document.getElementById('pfCurrencyBody');
+    if (!body) return;
+    var c = pfLoadCurrency();
+    body.innerHTML = PF_CURRENCY_FIELDS.map(function (f) {
+      return '<div class="pf-currency-row">' +
+        '<span class="pf-currency-label">' + f.icon + ' ' + f.label + '</span>' +
+        '<input type="number" min="0" class="pf-currency-input" value="' + c[f.key] + '" ' +
+        'onchange="pfSaveCurrencyField(\'' + f.key + '\', this.value)">' +
+        '</div>';
+    }).join('');
+    pfSyncCurrencyToggleUI();
+  }
+
+  var pfCurrencyOpen = true;
+  function pfToggleCurrency() {
+    pfCurrencyOpen = !pfCurrencyOpen;
+    pfSyncCurrencyToggleUI();
+  }
+  function pfSyncCurrencyToggleUI() {
+    var body = document.getElementById('pfCurrencyBody');
+    var label = document.getElementById('pfCurrencyToggleLabel');
+    if (body) body.style.display = pfCurrencyOpen ? '' : 'none';
+    if (label) label.textContent = pfCurrencyOpen ? '閉じる ▲' : '開く ▼';
+  }
+
+  function pfOpenModal() {
+    pfEditingId = null;
+    pfDeletingId = null;
+    pfRenderModal();
+    pfRenderCurrency();
+    var overlay = document.getElementById('pfModalOverlay');
+    if (overlay) overlay.classList.add('is-visible');
+  }
+  function pfCloseModal() {
+    pfEditingId = null;
+    pfDeletingId = null;
+    var overlay = document.getElementById('pfModalOverlay');
+    if (overlay) overlay.classList.remove('is-visible');
+  }
+
+  window.pfOpenModal = pfOpenModal;
+  window.pfCloseModal = pfCloseModal;
+  window.pfSwitchProfile = pfSwitchProfile;
+  window.pfAddProfile = pfAddProfile;
+  window.pfStartRename = pfStartRename;
+  window.pfStartDelete = pfStartDelete;
+  window.pfCancelRowState = pfCancelRowState;
+  window.pfConfirmRenameInline = pfConfirmRenameInline;
+  window.pfConfirmDeleteInline = pfConfirmDeleteInline;
+  window.pfSaveCurrencyField = pfSaveCurrencyField;
+  window.pfToggleCurrency = pfToggleCurrency;
+  window.pfSetProfileColor = pfSetProfileColor;
+  window.pfClearProfileColor = pfClearProfileColor;
+
+  pfRenderBar();
+
+  // ═══ サイドバー開閉 ═══
+  var sidebarEl = document.getElementById('sidebar');
+  var sidebarOverlayEl = document.getElementById('sidebarOverlay');
+  var sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+  var sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+
+  function openSidebar() {
+    sidebarEl.classList.add('sidebar-open');
+    sidebarOverlayEl.classList.add('is-visible');
+  }
+  function closeSidebar() {
+    sidebarEl.classList.remove('sidebar-open');
+    sidebarOverlayEl.classList.remove('is-visible');
+  }
+  sidebarToggleBtn.addEventListener('click', function () {
+    if (sidebarEl.classList.contains('sidebar-open')) closeSidebar(); else openSidebar();
+  });
+  sidebarCloseBtn.addEventListener('click', closeSidebar);
+  sidebarOverlayEl.addEventListener('click', closeSidebar);
+
+  // ═══ 本体: ノマキャン計算機 ═══
+  var els = {
+    target: document.getElementById('target'),
+    current: document.getElementById('current'),
+    targetDate: document.getElementById('targetDate'),
+    dailyRate: document.getElementById('dailyRate'),
+    dailyRateReadout: document.getElementById('dailyRateReadout'),
+    heartsToSend: document.getElementById('heartsToSend'),
+    fillCurrentBtn: document.getElementById('fillCurrentBtn'),
+    candleFill: document.getElementById('candleFill'),
+    resultContent: document.getElementById('resultContent')
+  };
+
+  // 入力内容をブラウザに保存する。localStorageが使えない環境(プライベートモード、
+  // 一部のプレビュー環境など)では静かに諦め、通常の計算機能はそのまま動作する。
+  var STORAGE_KEY = nsKey('skyNomacanCalc_v1');
+  function saveState() {
+    try {
+      var state = {
+        target: els.target.value,
+        current: els.current.value,
+        targetDate: els.targetDate.value,
+        dailyRate: els.dailyRate.value,
+        heartsToSend: els.heartsToSend.value
+      };
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (err) { /* storage unavailable - ignore */ }
+  }
+  function loadState() {
+    try {
+      var raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      var state = JSON.parse(raw);
+      if (state.target !== undefined) els.target.value = state.target;
+      if (state.current !== undefined) els.current.value = state.current;
+      if (state.targetDate !== undefined) els.targetDate.value = state.targetDate;
+      if (state.dailyRate !== undefined) els.dailyRate.value = state.dailyRate;
+      if (state.heartsToSend !== undefined) els.heartsToSend.value = state.heartsToSend;
+    } catch (err) { /* no saved data, corrupted data, or storage unavailable - ignore */ }
+  }
+
+  function fmt(n) {
+    var r = Math.round(n * 100) / 100;
+    return r.toLocaleString('ja-JP', { maximumFractionDigits: 2 });
+  }
+
+  function jpDate(date) {
+    var days = ['日', '月', '火', '水', '木', '金', '土'];
+    return date.getFullYear() + '年' + (date.getMonth() + 1) + '月' + date.getDate() + '日(' + days[date.getDay()] + ')';
+  }
+
+  function update() {
+    var target = Math.max(0, parseFloat(els.target.value) || 0);
+    var current = Math.max(0, parseFloat(els.current.value) || 0);
+    var dailyRate = Math.max(0, Math.min(40, parseInt(els.dailyRate.value, 10) || 0));
+    var heartsToSend = Math.max(0, parseFloat(els.heartsToSend.value) || 0);
+
+    var heartCost = heartsToSend * 3;
+    var totalDaily = dailyRate - heartCost;
+
+    var sliderPct = (dailyRate / 40) * 100;
+    els.dailyRate.style.setProperty('--fill', sliderPct + '%');
+    els.dailyRateReadout.textContent = dailyRate + '本';
+
+    var progressPct = target > 0 ? Math.min(100, (current / target) * 100) : 0;
+    els.candleFill.style.height = progressPct + '%';
+
+    var remaining = target - current;
+    var html = '';
+    var dailyLine = '1日あたり ' + fmt(totalDaily) + '本' +
+      (heartCost > 0 ? '　(獲得 ' + fmt(dailyRate) + '本 − ハート消費 ' + fmt(heartCost) + '本)' : '');
+
+    // 目標日(任意)からの逆算:期日までに必要な1日ペースを計算して表示用HTMLを組み立てる。
+    // 期日が未入力・過去日・目標達成済みの場合は何も表示しない。
+    var targetDateInfo = '';
+    if (els.targetDate.value && remaining > 0) {
+      var targetDateObj = new Date(els.targetDate.value + 'T23:59:59');
+      if (!isNaN(targetDateObj.getTime())) {
+        var msUntilTarget = targetDateObj.getTime() - new Date().getTime();
+        if (msUntilTarget > 0) {
+          var daysUntilTarget = msUntilTarget / 86400000;
+          var requiredDailyPace = remaining / daysUntilTarget;
+          var isOnPace = totalDaily >= requiredDailyPace;
+          targetDateInfo = '<div class="target-date-box">' +
+            jpDate(targetDateObj) + 'までに必要なペース　<strong>1日' + fmt(requiredDailyPace) + '本</strong><br>' +
+            '<span class="' + (isOnPace ? 'pace-ok' : 'pace-warn') + '">' +
+            (isOnPace ? '✓ 今のペースで間に合う見込みです' : '△ 今のペースだと1日' + fmt(requiredDailyPace - totalDaily) + '本足りません') +
+            '</span></div>';
+        }
+      }
+    }
+
+    if (target <= 0) {
+      html = '<p class="state-message">目標本数を入力すると、達成までの日数が表示されます。</p>';
+    } else if (remaining <= 0) {
+      html =
+        '<p class="state-message achieved">🎉 目標本数を達成しています！</p>' +
+        '<p class="breakdown">所持 ' + fmt(current) + '本 ／ 目標 ' + fmt(target) + '本</p>';
+    } else if (totalDaily <= 0) {
+      var warnMsg = heartCost > 0
+        ? '1日の収支がプラスにならないため、目標に到達できません。<br>集める本数か、送るハートの本数を見直してください。'
+        : '1日の獲得本数が0本のため計算できません。<br>集める本数のスライダーを見直してください。';
+      html =
+        '<p class="state-message warning">' + warnMsg + '</p>' +
+        '<p class="breakdown">残り ' + fmt(remaining) + '本<br>' + dailyLine + '</p>' +
+        targetDateInfo;
+    } else {
+      var daysNeeded = Math.ceil(remaining / totalDaily);
+      var weeksNeeded = Math.floor(daysNeeded / 7);
+      var today = new Date();
+      var estDate = new Date(today.getTime() + daysNeeded * 86400000);
+      html =
+        '<div class="hero-stat">あと ' + daysNeeded + '<span class="unit-small">日</span></div>' +
+        (weeksNeeded > 0 ? '<p class="stat-line">（約' + weeksNeeded + '週間）</p>' : '') +
+        '<p class="stat-line">達成予定日　<strong>' + jpDate(estDate) + '</strong>頃</p>' +
+        '<p class="stat-line">残り　<strong>' + fmt(remaining) + '本</strong></p>' +
+        targetDateInfo +
+        '<p class="breakdown">' +
+          dailyLine + '<br>' +
+          '進捗 ' + Math.round(progressPct) + '%' +
+        '</p>' +
+        '<p class="note">※1日ごとの獲得ペースをもとにした目安です。実際の日付とは前後する場合があります。</p>';
+    }
+
+    els.resultContent.innerHTML = html;
+  }
+
+  [els.target, els.current, els.targetDate, els.dailyRate, els.heartsToSend].forEach(function (el) {
+    el.addEventListener('input', function () {
+      update();
+      saveState();
+    });
+  });
+
+  // 「所持通貨から反映」ボタン: プロフィール共通の所持キャンドル数(wishOwnCurrency.candle)を
+  // そのまま所持本数欄に反映する。アイテム所持管理などで既に入力済みの値を使い回せる。
+  els.fillCurrentBtn.addEventListener('click', function () {
+    var c = pfLoadCurrency();
+    els.current.value = c.candle;
+    update();
+    saveState();
+  });
+
+  // ---- 目標日:カスタムカレンダーピッカー ----
+  // ネイティブの<input type="date">はサイトのテーマに合わせて装飾できないため、
+  // 値の保持だけをtargetDate(非表示)に任せ、見た目は独自のカレンダーUIで作る。
+  var datePickerEl = document.getElementById('datePicker');
+  var datePickerTrigger = document.getElementById('targetDateTrigger');
+  var datePickerTriggerText = document.getElementById('targetDateTriggerText');
+  var datePickerPopup = document.getElementById('datePickerPopup');
+  var datePickerGrid = document.getElementById('datePickerGrid');
+  var datePickerMonthLabel = document.getElementById('datePickerMonthLabel');
+  var datePickerPrevBtn = document.getElementById('datePickerPrev');
+  var datePickerNextBtn = document.getElementById('datePickerNext');
+  var datePickerClearBtn = document.getElementById('datePickerClear');
+  var datePickerViewDate = new Date();
+  datePickerViewDate.setDate(1);
+
+  function formatDateValue(d) {
+    var y = d.getFullYear();
+    var m = ('0' + (d.getMonth() + 1)).slice(-2);
+    var day = ('0' + d.getDate()).slice(-2);
+    return y + '-' + m + '-' + day;
+  }
+
+  function updateDateTriggerText() {
+    if (els.targetDate.value) {
+      var p = els.targetDate.value.split('-');
+      var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+      datePickerTriggerText.textContent = jpDate(d);
+      datePickerTrigger.classList.add('has-value');
+    } else {
+      datePickerTriggerText.textContent = '日付を選択(任意)';
+      datePickerTrigger.classList.remove('has-value');
+    }
+  }
+
+  function renderDatePickerGrid() {
+    var year = datePickerViewDate.getFullYear();
+    var month = datePickerViewDate.getMonth();
+    var firstWeekday = new Date(year, month, 1).getDay();
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+    var todayStr = formatDateValue(new Date());
+    var selectedStr = els.targetDate.value;
+
+    datePickerMonthLabel.textContent = year + '年' + (month + 1) + '月';
+
+    var html = '';
+    for (var i = 0; i < firstWeekday; i++) {
+      html += '<span class="date-picker-cell is-empty"></span>';
+    }
+    for (var d = 1; d <= daysInMonth; d++) {
+      var cellStr = formatDateValue(new Date(year, month, d));
+      var isPast = cellStr < todayStr;
+      var cls = 'date-picker-cell';
+      if (cellStr === selectedStr) cls += ' is-selected';
+      if (cellStr === todayStr) cls += ' is-today';
+      if (isPast) cls += ' is-past';
+      html += '<button type="button" class="' + cls + '" data-date="' + cellStr + '"' + (isPast ? ' disabled' : '') + '>' + d + '</button>';
+    }
+    datePickerGrid.innerHTML = html;
+  }
+
+  function openDatePicker() {
+    var p = els.targetDate.value ? els.targetDate.value.split('-') : null;
+    datePickerViewDate = p ? new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, 1) : new Date();
+    datePickerViewDate.setDate(1);
+    renderDatePickerGrid();
+    datePickerPopup.classList.add('is-open');
+    datePickerTrigger.classList.add('is-active');
+    datePickerTrigger.setAttribute('aria-expanded', 'true');
+    var cardEl = datePickerEl.closest('.card');
+    if (cardEl) cardEl.classList.add('has-open-popup');
+  }
+  function closeDatePicker() {
+    datePickerPopup.classList.remove('is-open');
+    datePickerTrigger.classList.remove('is-active');
+    datePickerTrigger.setAttribute('aria-expanded', 'false');
+    var cardEl = datePickerEl.closest('.card');
+    if (cardEl) cardEl.classList.remove('has-open-popup');
+  }
+
+  datePickerTrigger.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    if (datePickerPopup.classList.contains('is-open')) closeDatePicker();
+    else openDatePicker();
+  });
+  datePickerPrevBtn.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    datePickerViewDate.setMonth(datePickerViewDate.getMonth() - 1);
+    renderDatePickerGrid();
+  });
+  datePickerNextBtn.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    datePickerViewDate.setMonth(datePickerViewDate.getMonth() + 1);
+    renderDatePickerGrid();
+  });
+  datePickerGrid.addEventListener('click', function (ev) {
+    var cell = ev.target.closest ? ev.target.closest('.date-picker-cell') : null;
+    if (!cell || cell.disabled || cell.classList.contains('is-empty')) return;
+    els.targetDate.value = cell.getAttribute('data-date');
+    els.targetDate.dispatchEvent(new Event('input', { bubbles: true }));
+    updateDateTriggerText();
+    closeDatePicker();
+  });
+  datePickerClearBtn.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    els.targetDate.value = '';
+    els.targetDate.dispatchEvent(new Event('input', { bubbles: true }));
+    updateDateTriggerText();
+    closeDatePicker();
+  });
+  document.addEventListener('click', function (ev) {
+    if (!datePickerEl.contains(ev.target)) closeDatePicker();
+  });
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') closeDatePicker();
+  });
+
+  updateDateTriggerText();
+
+  loadState();
+  update();
+})();
+</script>
+</body>
+</html>
