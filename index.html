@@ -792,6 +792,27 @@
   }
   window.addEventListener('storage', function (e) {
     if (e.key === PROFILES_KEY) pfApplyThemeColor(pfGetActiveProfile().color);
+    // 他のタブ/サイトで所持通貨（キャンドル等）が更新された場合、プロフィールモーダルを
+    // 開いたままそのタブを見ていても、その場で表示が最新になるようにする
+    if (e.key === nsKey('wishOwnCurrency')) {
+      var overlay = document.getElementById('pfModalOverlay');
+      if (overlay && overlay.classList.contains('is-visible')) pfRenderCurrency();
+    }
+  });
+  window.addEventListener('pageshow', function (e) {
+    // bfcache（戻る/進むでページがJSを再実行せず復元される挙動）から復帰した際、
+    // 古い状態のまま表示され続けないよう、保存済みデータを読み直して再描画する
+    if (e.persisted) {
+      loadState();
+      update();
+      renderHistory();
+      pfApplyThemeColor(pfGetActiveProfile().color);
+      var overlay = document.getElementById('pfModalOverlay');
+      if (overlay && overlay.classList.contains('is-visible')) {
+        pfRenderModal();
+        pfRenderCurrency();
+      }
+    }
   });
   function pfSetProfileColor(id, color) {
     if (!pfIsSafeColor(color)) return;
