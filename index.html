@@ -603,6 +603,14 @@
       </div>
     </div>
     <div class="field">
+      <label for="plannedUsage">使用予定本数(任意)</label>
+      <div class="input-suffix">
+        <input type="number" id="plannedUsage" inputmode="decimal" min="0" step="1" placeholder="例: 50">
+        <span class="unit">本</span>
+      </div>
+      <p class="field-hint">目標本数とは別に、近々何かに使う予定がある分があれば入力してください。必要本数の計算に加算されます。</p>
+    </div>
+    <div class="field">
       <label for="current">所持本数</label>
       <div class="input-suffix">
         <input type="number" id="current" inputmode="decimal" min="0" step="1" placeholder="例: 30">
@@ -1079,6 +1087,7 @@
   // ═══ 本体: ノマキャン計算機 ═══
   var els = {
     target: document.getElementById('target'),
+    plannedUsage: document.getElementById('plannedUsage'),
     current: document.getElementById('current'),
     targetDate: document.getElementById('targetDate'),
     dailyRate: document.getElementById('dailyRate'),
@@ -1101,6 +1110,7 @@
     try {
       var state = {
         target: els.target.value,
+        plannedUsage: els.plannedUsage.value,
         current: els.current.value,
         targetDate: els.targetDate.value,
         dailyRate: els.dailyRate.value,
@@ -1115,6 +1125,7 @@
       if (!raw) return;
       var state = JSON.parse(raw);
       if (state.target !== undefined) els.target.value = state.target;
+      if (state.plannedUsage !== undefined) els.plannedUsage.value = state.plannedUsage;
       if (state.current !== undefined) els.current.value = state.current;
       if (state.targetDate !== undefined) els.targetDate.value = state.targetDate;
       if (state.dailyRate !== undefined) els.dailyRate.value = state.dailyRate;
@@ -1218,6 +1229,7 @@
 
   function update() {
     var target = Math.max(0, parseFloat(els.target.value) || 0);
+    var plannedUsage = Math.max(0, parseFloat(els.plannedUsage.value) || 0);
     var current = Math.max(0, parseFloat(els.current.value) || 0);
     var dailyRate = Math.max(0, Math.min(25, parseInt(els.dailyRate.value, 10) || 0));
     var heartsToSend = Math.max(0, parseFloat(els.heartsToSend.value) || 0);
@@ -1231,10 +1243,13 @@
     els.finishTodayAmount.textContent = dailyRate;
     els.finishTodayBtn.disabled = dailyRate <= 0;
 
-    var progressPct = target > 0 ? Math.min(100, (current / target) * 100) : 0;
+    // 使用予定本数は目標本数に上乗せして必要本数を計算する(目標として貯めておきたい分＋別途使う予定の分)
+    var effectiveTarget = target + plannedUsage;
+    var progressPct = effectiveTarget > 0 ? Math.min(100, (current / effectiveTarget) * 100) : 0;
     els.candleFill.style.height = progressPct + '%';
 
-    var remaining = target - current;
+    var remaining = effectiveTarget - current;
+    var usageNote = plannedUsage > 0 ? '（使用予定' + fmt(plannedUsage) + '本を含む）' : '';
     var html = '';
     var dailyLine = '1日あたり ' + fmt(totalDaily) + '本' +
       (heartCost > 0 ? '　(獲得 ' + fmt(dailyRate) + '本 − ハート消費 ' + fmt(heartCost) + '本)' : '');
@@ -1260,7 +1275,7 @@
     } else if (remaining <= 0) {
       html =
         '<p class="state-message achieved">🎉 目標本数を達成しています！</p>' +
-        '<p class="breakdown">所持 ' + fmt(current) + '本 ／ 目標 ' + fmt(target) + '本</p>';
+        '<p class="breakdown">所持 ' + fmt(current) + '本 ／ 必要 ' + fmt(effectiveTarget) + '本' + usageNote + '</p>';
     } else if (hasTargetDate) {
       // 目標日が設定されている場合は、そこから逆算した「1日に必要な本数」を主結果として表示する。
       // スライダーの値を設定していなくても、目標日さえ入れれば必要なペースが分かるようにする。
@@ -1268,7 +1283,7 @@
       html =
         '<div class="hero-stat">1日 ' + fmt(requiredDailyPace) + '<span class="unit-small">本</span></div>' +
         '<p class="stat-line">目標日　<strong>' + jpDate(targetDateObj) + '</strong>までに必要なペース</p>' +
-        '<p class="stat-line">残り　<strong>' + fmt(remaining) + '本</strong></p>' +
+        '<p class="stat-line">残り　<strong>' + fmt(remaining) + '本</strong>' + usageNote + '</p>' +
         '<div class="target-date-box">' +
           '今のペース(1日' + fmt(totalDaily) + '本)では　' +
           '<span class="' + (isOnPace ? 'pace-ok' : 'pace-warn') + '">' +
@@ -1285,7 +1300,7 @@
         : '1日の獲得本数が0本のため計算できません。<br>集める本数のスライダーを見直してください。';
       html =
         '<p class="state-message warning">' + warnMsg + '</p>' +
-        '<p class="breakdown">残り ' + fmt(remaining) + '本<br>' + dailyLine + '</p>';
+        '<p class="breakdown">残り ' + fmt(remaining) + '本' + usageNote + '<br>' + dailyLine + '</p>';
     } else {
       var daysNeeded = Math.ceil(remaining / totalDaily);
       var weeksNeeded = Math.floor(daysNeeded / 7);
@@ -1295,7 +1310,7 @@
         '<div class="hero-stat">あと ' + daysNeeded + '<span class="unit-small">日</span></div>' +
         (weeksNeeded > 0 ? '<p class="stat-line">（約' + weeksNeeded + '週間）</p>' : '') +
         '<p class="stat-line">達成予定日　<strong>' + jpDate(estDate) + '</strong>頃</p>' +
-        '<p class="stat-line">残り　<strong>' + fmt(remaining) + '本</strong></p>' +
+        '<p class="stat-line">残り　<strong>' + fmt(remaining) + '本</strong>' + usageNote + '</p>' +
         '<p class="breakdown">' +
           dailyLine + '<br>' +
           '進捗 ' + Math.round(progressPct) + '%' +
@@ -1318,7 +1333,7 @@
     if (overlay && overlay.classList.contains('is-visible')) pfRenderCurrency();
   }
 
-  [els.target, els.targetDate, els.dailyRate, els.heartsToSend].forEach(function (el) {
+  [els.target, els.plannedUsage, els.targetDate, els.dailyRate, els.heartsToSend].forEach(function (el) {
     el.addEventListener('input', function () {
       update();
       saveState();
