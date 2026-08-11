@@ -169,8 +169,11 @@
     cursor: pointer;
   }
   .fill-current-btn:hover { background: var(--cream-deep); border-color: var(--amber-light); }
+  .fill-current-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .fill-current-btn:disabled:hover { background: var(--cream); border-color: var(--border); }
   .survey-btn { color: var(--green); border-color: rgba(63,163,92,0.3); }
   .survey-btn:hover { background: rgba(63,163,92,0.08); border-color: var(--green); }
+  #finishTodayBtn { margin-top: 10px; }
 
   .date-picker { position: relative; }
 
@@ -643,6 +646,7 @@
       </div>
       <input type="range" id="dailyRate" min="0" max="25" step="1" value="15">
       <p class="field-hint">デイリークエストや光の収集などをこなした場合の、ざっくりした目安で大丈夫です。</p>
+      <button type="button" class="fill-current-btn" id="finishTodayBtn">✅ 今日の分を集め終わった(+<span id="finishTodayAmount">15</span>本)</button>
     </div>
     <hr class="divider">
     <div class="field">
@@ -1082,6 +1086,8 @@
     heartsToSend: document.getElementById('heartsToSend'),
     fillCurrentBtn: document.getElementById('fillCurrentBtn'),
     surveyBtn: document.getElementById('surveyBtn'),
+    finishTodayBtn: document.getElementById('finishTodayBtn'),
+    finishTodayAmount: document.getElementById('finishTodayAmount'),
     candleFill: document.getElementById('candleFill'),
     resultContent: document.getElementById('resultContent'),
     historyList: document.getElementById('historyList'),
@@ -1220,7 +1226,9 @@
 
     var sliderPct = (dailyRate / 25) * 100;
     els.dailyRate.style.setProperty('--fill', sliderPct + '%');
-    els.dailyRateReadout.textContent = dailyRate + '本';
+    els.dailyRateReadout.textContent = dailyRate + '本' + (dailyRate === 20 ? '（灰キャン）' : '');
+    els.finishTodayAmount.textContent = dailyRate;
+    els.finishTodayBtn.disabled = dailyRate <= 0;
 
     var progressPct = target > 0 ? Math.min(100, (current / target) * 100) : 0;
     els.candleFill.style.height = progressPct + '%';
@@ -1322,6 +1330,17 @@
     update();
     saveState();
     addHistoryEntry('アンケート回答', 3);
+  });
+
+  // 「今日の分を集め終わった」ボタン: 「1日の集めペース」スライダーの本数をそのまま所持本数に加算する。
+  els.finishTodayBtn.addEventListener('click', function () {
+    var dailyRate = Math.max(0, Math.min(25, parseInt(els.dailyRate.value, 10) || 0));
+    if (dailyRate <= 0) return;
+    var current = Math.max(0, parseFloat(els.current.value) || 0);
+    els.current.value = Math.round((current + dailyRate) * 100) / 100;
+    update();
+    saveState();
+    addHistoryEntry('今日の分を集め終わった', dailyRate);
   });
 
   // ---- 目標日:カスタムカレンダーピッカー ----
