@@ -641,7 +641,7 @@
         <label for="dailyRate">1日にだいたい集めている本数</label>
         <span class="slider-readout" id="dailyRateReadout">15本</span>
       </div>
-      <input type="range" id="dailyRate" min="0" max="40" step="1" value="15">
+      <input type="range" id="dailyRate" min="0" max="25" step="1" value="15">
       <p class="field-hint">デイリークエストや光の収集などをこなした場合の、ざっくりした目安で大丈夫です。</p>
     </div>
     <hr class="divider">
@@ -649,7 +649,7 @@
       <div class="toggle-field">
         <div class="toggle-text">
           <span class="toggle-title">毎日ハートを送っている</span>
-          <span class="toggle-sub">ハート1本につき1日キャンドル3本消費</span>
+          <span class="toggle-sub">ハート1個につき、1日キャンドル3本消費</span>
         </div>
       </div>
       <div class="input-suffix" style="margin-top:10px;">
@@ -1212,13 +1212,13 @@
   function update() {
     var target = Math.max(0, parseFloat(els.target.value) || 0);
     var current = Math.max(0, parseFloat(els.current.value) || 0);
-    var dailyRate = Math.max(0, Math.min(40, parseInt(els.dailyRate.value, 10) || 0));
+    var dailyRate = Math.max(0, Math.min(25, parseInt(els.dailyRate.value, 10) || 0));
     var heartsToSend = Math.max(0, parseFloat(els.heartsToSend.value) || 0);
 
     var heartCost = heartsToSend * 3;
     var totalDaily = dailyRate - heartCost;
 
-    var sliderPct = (dailyRate / 40) * 100;
+    var sliderPct = (dailyRate / 25) * 100;
     els.dailyRate.style.setProperty('--fill', sliderPct + '%');
     els.dailyRateReadout.textContent = dailyRate + '本';
 
