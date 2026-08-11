@@ -53,7 +53,13 @@
     padding: 40px 20px 50px;
   }
 
-  .page-head-top { display: flex; justify-content: flex-start; margin-bottom: 12px; }
+  .page-head-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
+  .force-refresh-btn {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 7px 12px; font-size: 12px; font-family: inherit; cursor: pointer; color: var(--text-dim);
+    display: inline-flex; align-items: center; gap: 5px; font-weight: 500;
+  }
+  .force-refresh-btn:hover { border-color: var(--amber); color: var(--amber-deep); }
 
   .page-head { text-align: center; margin-bottom: 26px; }
 
@@ -524,6 +530,7 @@
 
   <div class="page-head-top">
     <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn">☰ ツール</button>
+    <button type="button" class="force-refresh-btn" id="forceRefreshBtn" title="他サイトで更新した所持通貨などが反映されない場合、リロードの代わりにこちらをお試しください">🔄 最新の状態に更新</button>
   </div>
 
   <header class="page-head">
@@ -1083,6 +1090,15 @@
   });
   sidebarCloseBtn.addEventListener('click', closeSidebar);
   sidebarOverlayEl.addEventListener('click', closeSidebar);
+
+  // 「🔄 最新の状態に更新」ボタン: 通常のリロードはブラウザのキャッシュが残っていると
+  // 古いページのまま表示され続けることがあるため、URLにキャッシュ回避用のクエリを付けて
+  // 強制的に新しいページとして取得し直す。
+  var forceRefreshBtn = document.getElementById('forceRefreshBtn');
+  forceRefreshBtn.addEventListener('click', function () {
+    var url = location.pathname + '?_=' + Date.now();
+    location.href = url;
+  });
 
   // ═══ 本体: ノマキャン計算機 ═══
   var els = {
