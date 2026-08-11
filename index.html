@@ -1312,6 +1312,10 @@
   // 開いただけで上書きしてしまわないようにする。ユーザーが実際に本数を動かした時だけ同期する。
   function syncCurrentToSharedCurrency() {
     pfSaveCurrencyField('candle', els.current.value);
+    // プロフィールモーダルを開いたまま所持本数を編集した場合、モーダル内の「所持通貨」表示は
+    // 開いた時点のスナップショットのままになってしまうため、開いていれば即座に再描画する
+    var overlay = document.getElementById('pfModalOverlay');
+    if (overlay && overlay.classList.contains('is-visible')) pfRenderCurrency();
   }
 
   [els.target, els.targetDate, els.dailyRate, els.heartsToSend].forEach(function (el) {
