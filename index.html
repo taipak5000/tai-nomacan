@@ -1207,6 +1207,7 @@
       renderHistory();
       update();
       saveState();
+      syncCurrentToSharedCurrency();
     } catch (err) { /* no-op */ }
   });
   els.historyClearBtn.addEventListener('click', function () {
@@ -1305,11 +1306,24 @@
     els.resultContent.innerHTML = html;
   }
 
-  [els.target, els.current, els.targetDate, els.dailyRate, els.heartsToSend].forEach(function (el) {
+  // 所持本数をプロフィール共通の所持キャンドル数(wishOwnCurrency.candle)へ書き戻す。
+  // アイテム所持管理など他サイトの「所持通貨」表示にも同じ値が反映されるようにするため。
+  // ページ読み込み時(loadState直後のupdate)では呼ばない = 他サイトで先に更新された値を
+  // 開いただけで上書きしてしまわないようにする。ユーザーが実際に本数を動かした時だけ同期する。
+  function syncCurrentToSharedCurrency() {
+    pfSaveCurrencyField('candle', els.current.value);
+  }
+
+  [els.target, els.targetDate, els.dailyRate, els.heartsToSend].forEach(function (el) {
     el.addEventListener('input', function () {
       update();
       saveState();
     });
+  });
+  els.current.addEventListener('input', function () {
+    update();
+    saveState();
+    syncCurrentToSharedCurrency();
   });
 
   // 「所持通貨から反映」ボタン: プロフィール共通の所持キャンドル数(wishOwnCurrency.candle)を
@@ -1329,6 +1343,7 @@
     els.current.value = Math.round((current + 3) * 100) / 100;
     update();
     saveState();
+    syncCurrentToSharedCurrency();
     addHistoryEntry('アンケート回答', 3);
   });
 
@@ -1340,6 +1355,7 @@
     els.current.value = Math.round((current + dailyRate) * 100) / 100;
     update();
     saveState();
+    syncCurrentToSharedCurrency();
     addHistoryEntry('今日の分を集め終わった', dailyRate);
   });
 
