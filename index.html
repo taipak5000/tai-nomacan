@@ -1316,15 +1316,17 @@
     } else if (hasTargetDate) {
       // 目標日が設定されている場合は、そこから逆算した「1日に必要な本数」を主結果として表示する。
       // スライダーの値を設定していなくても、目標日さえ入れれば必要なペースが分かるようにする。
-      var isOnPace = totalDaily >= requiredDailyPace;
+      // 「今のペースでは」はスライダーで選んだ本数をそのまま基準にする(ハート消費を差し引いた
+      // 実質本数は、下の内訳(dailyLine)で別途確認できる)。
+      var isOnPace = dailyRate >= requiredDailyPace;
       html =
         '<div class="hero-stat">1日 ' + fmt(requiredDailyPace) + '<span class="unit-small">本</span></div>' +
         '<p class="stat-line">目標日　<strong>' + jpDate(targetDateObj) + '</strong>までに必要なペース</p>' +
         '<p class="stat-line">残り　<strong>' + fmt(remaining) + '本</strong>' + usageNote + '</p>' +
         '<div class="target-date-box">' +
-          '今のペース(1日' + fmt(totalDaily) + '本)では　' +
+          '今のペース(1日' + fmt(dailyRate) + '本)では　' +
           '<span class="' + (isOnPace ? 'pace-ok' : 'pace-warn') + '">' +
-          (isOnPace ? '✓ 間に合う見込みです' : '△ 1日' + fmt(requiredDailyPace - totalDaily) + '本足りません') +
+          (isOnPace ? '✓ 間に合う見込みです' : '△ 1日' + fmt(requiredDailyPace - dailyRate) + '本足りません') +
           '</span></div>' +
         '<p class="breakdown">' +
           dailyLine + '<br>' +
