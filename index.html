@@ -421,9 +421,23 @@
     max-width: 460px; margin: 0 auto 14px;
     background: var(--card-bg); border: 1px solid var(--border);
     border-radius: 14px; padding: 10px 16px;
-    font-size: 13.5px; color: var(--text-dim); text-align: center; cursor: pointer;
+    font-size: 13.5px; color: var(--text-dim);
+    display: flex; align-items: center; gap: 10px;
   }
   .pf-bar b { color: var(--amber-deep); font-weight: 700; }
+  .pf-bar-text { flex: 1; min-width: 0; cursor: pointer; }
+  .pf-dash-btn { background: var(--cream); border: 1px solid var(--border); color: var(--text-dim);
+    border-radius: 6px; padding: 5px 10px; font-size: 14px; cursor: pointer; flex-shrink: 0; line-height: 1; }
+  .pf-dash-btn:hover { background: var(--cream-deep); }
+  .dash-section { margin-top: 16px; }
+  .dash-section:first-child { margin-top: 0; }
+  .dash-section-label { font-size: 12px; font-weight: 700; color: var(--text-dim); margin: 0 0 8px;
+    text-transform: uppercase; letter-spacing: 0.4px; }
+  .dash-row { display: flex; align-items: flex-start; gap: 8px; padding: 9px 11px; background: var(--cream);
+    border-radius: 10px; margin-bottom: 6px; font-size: 13px; color: var(--text); line-height: 1.5; }
+  .dash-row:last-child { margin-bottom: 0; }
+  .dash-row b { color: var(--amber-deep); }
+  .dash-empty { font-size: 12.5px; color: var(--text-dim); padding: 2px 2px 4px; }
   .pf-modal-overlay {
     display: none; position: fixed; inset: 0; background: rgba(58,46,34,0.35); z-index: 1000;
     align-items: center; justify-content: center; padding: 20px;
@@ -539,7 +553,7 @@
     <p class="subtitle">Sky 星を紡ぐ子どもたち・目標本数まであと何日？</p>
   </header>
 
-  <div class="pf-bar" id="pfBar" onclick="pfOpenModal()"></div>
+  <div class="pf-bar" id="pfBar"></div>
 
   <div class="pf-modal-overlay" id="pfModalOverlay">
     <div class="pf-modal-card">
@@ -558,6 +572,14 @@
         <div id="pfCurrencyBody"></div>
       </div>
       <button type="button" class="pf-close-btn" onclick="pfCloseModal()">閉じる</button>
+    </div>
+  </div>
+
+  <div class="pf-modal-overlay" id="dashModalOverlay">
+    <div class="pf-modal-card">
+      <h3>🗓️ 今日・今週・今月</h3>
+      <div id="dashBody"><p class="pf-hint">読み込み中…</p></div>
+      <button type="button" class="pf-close-btn" onclick="pfDashClose()">閉じる</button>
     </div>
   </div>
 
@@ -889,7 +911,107 @@
     pfApplyThemeColor(active.color);
     var bar = document.getElementById('pfBar');
     if (!bar) return;
-    bar.innerHTML = '🗂️ <b>' + pfEscapeHtml(active.name) + '</b>&nbsp;に切替中（タップで切替）';
+    bar.innerHTML = '<span class="pf-bar-text" onclick="pfOpenModal()">🗂️ <b>' + pfEscapeHtml(active.name) + '</b>&nbsp;に切替中（タップで切替）</span>' +
+      '<button type="button" class="pf-dash-btn" onclick="pfDashOpen()" title="今日・今週・今月ダッシュボード">🗓️</button>';
+  }
+
+  /* ================================================================
+     🗓️ ダッシュボード（今日・今週・今月）
+     全サイト共通のボタン。データの本家はitem（アイテム所持管理）のindex.html
+     （CURRENT_EVENTS・REVISIT_SPIRIT_SCHEDULE・CURRENT_SEASON）。二重管理を
+     避けるため、常にitem/index.htmlをfetchして読む（他サイトと同じ考え方）。
+     ================================================================ */
+  // HTMLに埋め込まれた `const 変数名 = [...]`（または `{...}`）を安全に取り出す
+  function pfExtractArray(html, varName) {
+    var m = html.match(new RegExp('const ' + varName + '\\s*=\\s*([\\[{][\\s\\S]*?\\n[\\]}]);'));
+    if (!m) return null;
+    try { return new Function('return ' + m[1] + ';')(); } catch (e) { console.error(varName, e); return null; }
+  }
+  function pfDashPacificNow() {
+    return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  }
+  function pfDashNextEdenResetDays() {
+    var now = pfDashPacificNow();
+    var todayMidnight = new Date(now);
+    todayMidnight.setHours(0, 0, 0, 0);
+    var addDays = (7 - todayMidnight.getDay()) % 7;
+    if (addDays === 0 && now.getTime() > todayMidnight.getTime()) addDays = 7;
+    var target = new Date(todayMidnight);
+    target.setDate(target.getDate() + addDays);
+    return Math.max(0, Math.ceil((target - now) / 86400000));
+  }
+  function pfDashRevisitStatus(schedule) {
+    if (!schedule || !schedule.anchorStart || !schedule.anchorEnd) return null;
+    var start0 = new Date(schedule.anchorStart);
+    var end0 = new Date(schedule.anchorEnd);
+    var intervalMs = schedule.intervalDays * 86400000;
+    var now = new Date();
+    var k = Math.floor((now - start0) / intervalMs);
+    var start = new Date(start0.getTime() + k * intervalMs);
+    var end = new Date(start.getTime() + (end0 - start0));
+    if (start <= now && now <= end) return { active: true, daysLeft: Math.ceil((end - now) / 86400000) };
+    var nextStart = now < start ? start : new Date(start.getTime() + intervalMs);
+    return { active: false, daysUntil: Math.ceil((nextStart - now) / 86400000) };
+  }
+  function pfDashLoadData() {
+    return fetch(location.origin + '/tai-item/index.html').then(function (res) { return res.text(); }).then(function (html) {
+      return {
+        events: pfExtractArray(html, 'CURRENT_EVENTS') || [],
+        revisit: pfExtractArray(html, 'REVISIT_SPIRIT_SCHEDULE') || null,
+        season: pfExtractArray(html, 'CURRENT_SEASON') || null,
+      };
+    });
+  }
+  function pfDashBuildHtml(data) {
+    var todayRows = [];
+    data.events.forEach(function (name) {
+      todayRows.push('<div class="dash-row">🌟 <b>' + pfEscapeHtml(name) + '</b> が開催中</div>');
+    });
+    var rv = pfDashRevisitStatus(data.revisit);
+    if (rv && data.revisit) {
+      todayRows.push(rv.active
+        ? '<div class="dash-row">🕊️ 旅の精霊 「<b>' + pfEscapeHtml(data.revisit.name) + '</b>」が来訪中（あと' + rv.daysLeft + '日）</div>'
+        : '<div class="dash-row">🕊️ 旅の精霊 「<b>' + pfEscapeHtml(data.revisit.name) + '</b>」の次回来訪まであと' + rv.daysUntil + '日</div>');
+    }
+    var todayHtml = todayRows.length ? todayRows.join('') : '<div class="dash-empty">現在開催中の季節・イベントはありません</div>';
+
+    var edenDays = pfDashNextEdenResetDays();
+    var edenText = edenDays === 0 ? '本日リセット' : ('あと' + edenDays + '日でリセット');
+    var weekHtml = '<div class="dash-row">🌩️ エデンの目：羽ばたく光の週間上限が' + edenText + '<br><span style="font-size:11.5px; color:var(--text-dim);">毎週日曜0時・太平洋時間</span></div>';
+
+    var monthHtml;
+    if (data.season && data.season.endDate) {
+      var end = new Date(data.season.endDate);
+      var daysLeft = Math.max(0, Math.ceil((end - new Date()) / 86400000));
+      monthHtml = '<div class="dash-row">🎨 「<b>' + pfEscapeHtml(data.season.name) + '</b>」終了まであと' + daysLeft + '日</div>';
+    } else {
+      monthHtml = '<div class="dash-empty">シーズン情報が取得できませんでした</div>';
+    }
+
+    return '<div class="dash-section"><p class="dash-section-label">今日</p>' + todayHtml + '</div>' +
+      '<div class="dash-section"><p class="dash-section-label">今週</p>' + weekHtml + '</div>' +
+      '<div class="dash-section"><p class="dash-section-label">今月</p>' + monthHtml + '</div>';
+  }
+  var pfDashCache = null;
+  var pfDashLoading = null;
+  function pfDashOpen() {
+    var overlay = document.getElementById('dashModalOverlay');
+    if (overlay) overlay.classList.add('is-visible');
+    var body = document.getElementById('dashBody');
+    if (pfDashCache) { body.innerHTML = pfDashBuildHtml(pfDashCache); return; }
+    body.innerHTML = '<p class="pf-hint">読み込み中…</p>';
+    if (!pfDashLoading) pfDashLoading = pfDashLoadData();
+    pfDashLoading.then(function (data) {
+      pfDashCache = data;
+      body.innerHTML = pfDashBuildHtml(data);
+    }).catch(function (e) {
+      console.error('pfDashOpen', e);
+      body.innerHTML = '<div class="dash-empty">読み込みに失敗しました</div>';
+    });
+  }
+  function pfDashClose() {
+    var overlay = document.getElementById('dashModalOverlay');
+    if (overlay) overlay.classList.remove('is-visible');
   }
 
   // 名前変更中・削除確認中のプロフィールID（ポップアップブロックの影響を受ける
@@ -1075,6 +1197,8 @@
 
   window.pfOpenModal = pfOpenModal;
   window.pfCloseModal = pfCloseModal;
+  window.pfDashOpen = pfDashOpen;
+  window.pfDashClose = pfDashClose;
   window.pfSwitchProfile = pfSwitchProfile;
   window.pfAddProfile = pfAddProfile;
   window.pfStartRename = pfStartRename;
