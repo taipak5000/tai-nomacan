@@ -942,6 +942,42 @@
     target.setDate(target.getDate() + addDays);
     return Math.max(0, Math.ceil((target - now) / 86400000));
   }
+  // 闇の破片（赤闇・黒闇）の出現予測。コミュニティ製の予測ツール
+  // https://github.com/PlutoyDev/sky-shards （src/data/shard.ts）のアルゴリズムを
+  // 忠実に移植したもの。月の日付・曜日だけから決定論的に計算できるため手動更新データは不要。
+  var SHARD_REALM_JA = { prairie: '草原', forest: '雨林', valley: '峡谷', wasteland: '荒野', vault: '書庫' };
+  var SHARD_REALMS = ['prairie', 'forest', 'valley', 'wasteland', 'vault'];
+  var SHARD_GROUPS = [
+    { noShardWkDay: [6, 0], intervalH: 8, offsetH: 1, offsetM: 50 },
+    { noShardWkDay: [0, 1], intervalH: 8, offsetH: 2, offsetM: 10 },
+    { noShardWkDay: [1, 2], intervalH: 6, offsetH: 7, offsetM: 40 },
+    { noShardWkDay: [2, 3], intervalH: 6, offsetH: 2, offsetM: 20 },
+    { noShardWkDay: [3, 4], intervalH: 6, offsetH: 3, offsetM: 30 },
+  ];
+  function pfDashShardInfo() {
+    var pacNow = pfDashPacificNow();
+    var today = new Date(pacNow);
+    today.setHours(0, 0, 0, 0);
+    var dayOfMth = today.getDate();
+    var dayOfWk = today.getDay();
+    var isRed = dayOfMth % 2 === 1;
+    var realmIdx = (dayOfMth - 1) % 5;
+    var groupIdx = isRed ? (Math.floor((dayOfMth - 1) / 2) % 3) + 2 : Math.floor(dayOfMth / 2) % 2;
+    var group = SHARD_GROUPS[groupIdx];
+    var hasShard = group.noShardWkDay.indexOf(dayOfWk) === -1;
+    var realm = SHARD_REALMS[realmIdx];
+    var realOffsetMs = Date.now() - pacNow.getTime();
+    var firstStartFake = new Date(today);
+    firstStartFake.setHours(group.offsetH, group.offsetM, 0, 0);
+    var intervalMs = group.intervalH * 3600000;
+    var occurrences = [0, 1, 2].map(function (i) { return new Date(firstStartFake.getTime() + intervalMs * i + realOffsetMs); });
+    return { isRed: isRed, hasShard: hasShard, realm: realm, occurrences: occurrences };
+  }
+  function pfDashFormatShardTime(d) {
+    var mm = d.getMonth() + 1, dd = d.getDate();
+    var hh = String(d.getHours()).padStart(2, '0'), mi = String(d.getMinutes()).padStart(2, '0');
+    return mm + '/' + dd + ' ' + hh + ':' + mi;
+  }
   function pfDashRevisitStatus(schedule) {
     if (!schedule || !schedule.anchorStart || !schedule.anchorEnd) return null;
     var start0 = new Date(schedule.anchorStart);
@@ -977,6 +1013,16 @@
       todayRows.push(pfDashRow('🕊️', rv.active
         ? '旅の精霊 「<b>' + pfEscapeHtml(data.revisit.name) + '</b>」が来訪中（あと' + rv.daysLeft + '日）'
         : '旅の精霊 「<b>' + pfEscapeHtml(data.revisit.name) + '</b>」の次回来訪まであと' + rv.daysUntil + '日'));
+    }
+    var shard = pfDashShardInfo();
+    if (shard.hasShard) {
+      var shardIcon = shard.isRed ? '🔴' : '⚫';
+      var shardColorLabel = shard.isRed ? '赤闇' : '黒闇';
+      var shardRealmLabel = SHARD_REALM_JA[shard.realm];
+      var shardTimes = shard.occurrences.map(pfDashFormatShardTime).join(' / ');
+      todayRows.push(pfDashRow(shardIcon, shardColorLabel + '（<b>' + shardRealmLabel + '</b>）が出現：' + shardTimes));
+    } else {
+      todayRows.push(pfDashRow('🌑', '本日は闇の破片の出現はありません'));
     }
     var todayHtml = todayRows.length ? todayRows.join('') : '<div class="dash-empty">現在開催中の季節・イベントはありません</div>';
 
