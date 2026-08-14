@@ -1138,7 +1138,7 @@
     todayRows.push(pfDashRow('🐢', '亀闇<span class="dash-countdown">次回まで ' + pfDashCountdown(pfDashNextEvenHourEvent(50)) + '</span>'));
     var todayHtml = todayRows.length ? todayRows.join('') : '<div class="dash-empty">現在開催中の季節・イベントはありません</div>';
 
-    var weekHtml = pfDashRow('🌩️', '原罪：羽ばたく光の週間上限のリセットまで<span class="dash-countdown">' + pfDashCountdown(pfDashNextEdenResetTarget()) + '</span><span class="dash-note">毎週日曜0時・太平洋時間</span>');
+    var weekHtml = pfDashRow('🌩️', '原罪：週間リセットまで<span class="dash-countdown">' + pfDashCountdown(pfDashNextEdenResetTarget()) + '</span><span class="dash-note">毎週日曜0時・太平洋時間</span>');
 
     var monthHtml;
     if (data.season && data.season.endDate) {
