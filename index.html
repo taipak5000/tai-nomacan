@@ -441,6 +441,7 @@
   .dash-row b { color: var(--amber-deep); }
   .dash-countdown { display: block; margin-top: 3px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--amber-deep); }
   .dash-note { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 400; color: var(--text-dim); }
+  .dash-shard-times { display: block; margin-top: 3px; }
   .dash-shard-time { color: var(--amber-deep); font-weight: 600; font-variant-numeric: tabular-nums; }
   .dash-shard-time.past { color: var(--text-dim); font-weight: 400; text-decoration: line-through; }
   .dash-empty { font-size: 12.5px; color: var(--text-dim); padding: 2px 2px 4px; }
@@ -1124,7 +1125,7 @@
       }).join(' / ');
       var shardSoon = pfDashSoonestFuture(shard.occurrences) || pfDashNextShardTime();
       var shardCountdownHtml = shardSoon ? ('<span class="dash-countdown">次まで ' + pfDashCountdown(shardSoon) + '</span>') : '';
-      todayRows.push(pfDashRow(shardIcon, shardColorLabel + '（<b>' + shardRealmLabel + '・' + shardLocationLabel + '</b>）が出現：' + shardTimes + shardCountdownHtml));
+      todayRows.push(pfDashRow(shardIcon, shardColorLabel + '（<b>' + shardRealmLabel + '・' + shardLocationLabel + '</b>）が出現：<span class="dash-shard-times">' + shardTimes + '</span>' + shardCountdownHtml));
     } else {
       var nextShard = pfDashNextShardTime();
       var nextShardHtml = nextShard ? ('<span class="dash-countdown">次まで ' + pfDashCountdown(nextShard) + '</span>') : '';
