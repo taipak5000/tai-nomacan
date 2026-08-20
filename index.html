@@ -1749,8 +1749,8 @@
     var rv = pfDashRevisitStatus(data.revisit);
     if (rv && data.revisit) {
       var revisitLabel = rv.active
-        ? t('dashboard.revisitSpirit') + ' ' + t('dashboard.quoteOpen') + '<b>' + pfEscapeHtml(data.revisit.name) + '</b>' + t('dashboard.quoteClose') + t('dashboard.revisitHereNow')
-        : t('dashboard.revisitSpirit') + ' ' + t('dashboard.quoteOpen') + '<b>' + pfEscapeHtml(data.revisit.name) + '</b>' + t('dashboard.quoteClose') + t('dashboard.revisitReturnsIn');
+        ? t('dashboard.revisitSpirit') + t('dashboard.revisitHereNow')
+        : t('dashboard.revisitSpirit') + t('dashboard.revisitReturnsIn');
       todayRows.push(pfDashRow('🕊️', revisitLabel + '<span class="dash-countdown">' + pfDashCountdown(rv.target) + '</span>'));
     }
     var todayHtml = todayRows.length ? todayRows.join('') : '<div class="dash-empty">' + t('dashboard.noCurrentSeasonEvent') + '</div>';
