@@ -607,7 +607,8 @@
   }
   .site-dock button:active { background: var(--border); }
   .site-dock .site-dock-icon { font-size: 20px; line-height: 1; }
-  .site-dock .site-dock-label { font-size: 10px; font-weight: 700; color: var(--text-dim); }
+  .site-dock .site-dock-label { font-size: 10px; font-weight: 700; color: var(--text-dim);
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -761,6 +762,12 @@
           <span class="toggle-title" data-i18n="settings.customizeIconLabel">ホーム画面アイコン</span>
         </div>
         <button type="button" class="pf-icon-btn" onclick="settingsGoToIconCustomize()" data-i18n="settings.customizeBtn">🎨 カスタマイズ</button>
+      </div>
+
+      <div class="sidebar-section-label" style="margin:18px 0 8px;" data-i18n="settings.langSectionLabel">🌐 言語</div>
+      <div style="display:flex; gap:8px; margin-bottom:18px;">
+        <button type="button" class="pf-icon-btn" id="settingsLangJaBtn" style="flex:1; padding:8px;" onclick="setLang('ja')">日本語</button>
+        <button type="button" class="pf-icon-btn" id="settingsLangEnBtn" style="flex:1; padding:8px;" onclick="setLang('en')">English</button>
       </div>
 
       <button type="button" class="pf-close-btn" data-i18n="profile.closeBtn" onclick="settingsCloseModal()">閉じる</button>
@@ -940,7 +947,7 @@
   <nav class="site-dock" id="siteDock" data-i18n-aria-label="dock.ariaLabel" aria-label="クイックメニュー">
     <button type="button" onclick="pfOpenModal()">
       <span class="site-dock-icon" aria-hidden="true">🗂️</span>
-      <span class="site-dock-label" data-i18n="dock.profile">プロフィール</span>
+      <span class="site-dock-label" id="siteDockProfileLabel">プロフィール</span>
     </button>
     <button type="button" onclick="pfDashOpen()">
       <span class="site-dock-icon" aria-hidden="true">🗓️</span>
@@ -1127,7 +1134,8 @@
       shortcutCloseModal: { ja: '開いているウィンドウを閉じる', en: 'Close the open window' },
       customizeSectionLabel: { ja: '🎨 表示のカスタマイズ', en: '🎨 Customization' },
       customizeIconLabel: { ja: 'ホーム画面アイコン', en: 'Home screen icon' },
-      customizeBtn: { ja: '🎨 カスタマイズ', en: '🎨 Customize' }
+      customizeBtn: { ja: '🎨 カスタマイズ', en: '🎨 Customize' },
+      langSectionLabel: { ja: '🌐 言語', en: '🌐 Language' }
     },
     footer: {
       disclaimer: { ja: 'このサイトはSky 星を紡ぐ子どもたちの非公式ファンサイトです。thatgamecompanyは一切関与していません。', en: 'This is an unofficial fan site for Sky: Children of the Light. thatgamecompany is not involved in any way.' },
@@ -1249,10 +1257,28 @@
     renderWeekdayHeaders();
   }
 
-  // 言語トグル。表示を切り替え、動的に生成される各種UI(結果カード・履歴・
-  // プロフィール・ダッシュボード・アイコンカスタマイズ等)を最新の言語で再描画する。
-  function toggleLang() {
-    LANG = LANG === 'ja' ? 'en' : 'ja';
+  // 設定モーダルの言語セレクター(日本語/English)ボタンの選択状態を、現在のLANGに
+  // 合わせて反映する。⚙️表示設定モーダルを開いたとき・言語切替の直後に呼び出す。
+  function updateLangButtonsUI() {
+    var jaBtn = document.getElementById('settingsLangJaBtn');
+    var enBtn = document.getElementById('settingsLangEnBtn');
+    if (jaBtn) {
+      jaBtn.style.background = LANG === 'ja' ? 'var(--amber)' : 'var(--cream)';
+      jaBtn.style.color = LANG === 'ja' ? '#fff' : 'var(--text-dim)';
+    }
+    if (enBtn) {
+      enBtn.style.background = LANG === 'en' ? 'var(--amber)' : 'var(--cream)';
+      enBtn.style.color = LANG === 'en' ? '#fff' : 'var(--text-dim)';
+    }
+  }
+
+  // 言語を指定の言語に切り替える。表示を切り替え、動的に生成される各種UI(結果カード・
+  // 履歴・プロフィール・ダッシュボード・アイコンカスタマイズ等)を最新の言語で再描画する。
+  // 既に指定の言語がアクティブな場合は何もしない(安全なノーオペレーション)。
+  function setLang(lang) {
+    if (lang !== 'ja' && lang !== 'en') return;
+    if (lang === LANG) return;
+    LANG = lang;
     try { localStorage.setItem(LANG_STORAGE_KEY, LANG); } catch (e) { /* noop */ }
     applyI18n();
     if (typeof update === 'function') update();
@@ -1268,8 +1294,14 @@
       var dashBodyEl = document.getElementById('dashBody');
       if (dashBodyEl) dashBodyEl.innerHTML = pfDashBuildHtml(pfDashCache);
     }
+    updateLangButtonsUI();
+  }
+  // 従来の2言語トグル(既存のヘッダーの言語切替ボタン等から利用)。setLang()を使って実装。
+  function toggleLang() {
+    setLang(LANG === 'ja' ? 'en' : 'ja');
   }
   window.toggleLang = toggleLang;
+  window.setLang = setLang;
   applyI18n();
 
   /* ================================================================
@@ -1475,9 +1507,14 @@
     var active = pfGetActiveProfile();
     pfApplyThemeColor(active.color);
     var bar = document.getElementById('pfBar');
-    if (!bar) return;
-    bar.innerHTML = '<span class="pf-bar-text" onclick="pfOpenModal()">🗂️ <b>' + pfEscapeHtml(active.name) + '</b>&nbsp;' + t('profile.barActiveSuffix') + '</span>' +
-      '<button type="button" class="pf-dash-btn" onclick="pfDashOpen()" title="' + t('profile.dashboardBtnTitle') + '">🗓️</button>';
+    if (bar) {
+      bar.innerHTML = '<span class="pf-bar-text" onclick="pfOpenModal()">🗂️ <b>' + pfEscapeHtml(active.name) + '</b>&nbsp;' + t('profile.barActiveSuffix') + '</span>' +
+        '<button type="button" class="pf-dash-btn" onclick="pfDashOpen()" title="' + t('profile.dashboardBtnTitle') + '">🗓️</button>';
+    }
+    // 画面下部クイックメニュー(ドック)のプロフィールボタンにも、現在アクティブな
+    // プロフィール名を反映する(固定の「プロフィール」ラベルではなく)。
+    var dockLabel = document.getElementById('siteDockProfileLabel');
+    if (dockLabel) dockLabel.textContent = active.name;
   }
 
   /* ================================================================
@@ -2246,6 +2283,7 @@
   function settingsOpenModal() {
     updateThemeToggleUI();
     updateShortcutsCheckboxUI();
+    updateLangButtonsUI();
     var overlay = document.getElementById('settingsModalOverlay');
     if (overlay) overlay.classList.add('is-visible');
     closeSidebar();
