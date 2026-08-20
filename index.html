@@ -84,6 +84,9 @@
     position: relative;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    /* 画面下部固定のクイックメニュー(.site-dock)にページ末尾のコンテンツが
+       隠れないよう、その高さ分(+セーフエリア)を確保する */
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
   }
 
   .wrap {
@@ -587,6 +590,24 @@
   .sidebar-close-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-dim); padding: 0; line-height: 1; flex-shrink: 0; }
   .head-btn-group { display: flex; gap: 8px; }
   .lang-toggle-btn { min-width: 42px; justify-content: center; }
+
+  /* ═══ サイトドック（画面下部固定クイックメニュー） ═══ */
+  .site-dock {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+    padding: 6px 10px calc(8px + env(safe-area-inset-bottom));
+    background: var(--card-bg);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-top: 0.5px solid var(--border);
+    justify-content: space-around; align-items: stretch; gap: 4px;
+  }
+  .site-dock button {
+    flex: 1 1 0; max-width: 110px; border: 0; background: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 6px 0; min-height: 52px; border-radius: 12px; font-family: inherit;
+  }
+  .site-dock button:active { background: var(--border); }
+  .site-dock .site-dock-icon { font-size: 20px; line-height: 1; }
+  .site-dock .site-dock-label { font-size: 10px; font-weight: 700; color: var(--text-dim); }
 </style>
 </head>
 <body>
@@ -899,6 +920,33 @@
     <span data-i18n="footer.creditLabel">作成・ご意見:</span> <a href="https://x.com/Skyzztai" target="_blank" rel="noopener noreferrer">@Skyzztai</a>　／　<a href="https://odaibako.net/u/Skyzztai" target="_blank" rel="noopener noreferrer" data-i18n="footer.requestForm">リクエストフォーム</a><br>
     <a href="https://taipak5000.github.io/tai-info/" target="_blank" rel="noopener noreferrer" data-i18n="footer.infoLink">⚙️ 設定・更新情報・クレジット・プライバシーポリシー</a>
   </footer>
+
+  <!-- ▸ サイトドック（画面下部固定クイックメニュー）: ハンバーガーサイドバーとは別の、
+       よく使う4機能へのショートカット行。サイドバー自体の開閉やリンク一覧はそのまま。
+       .wrap (position:relative; z-index:1) の内側に置くことで、.wrap内のモーダル
+       (z-index:1000)・開いたサイドバー(z-index:500)と同じスタッキングコンテキストに
+       属させ、ドックのz-index:90より確実に手前に重なるようにしている。
+       (.wrapの外に置くと、ドックがルート側のスタッキングコンテキストで
+       z-index:90を持つ一方、モーダル等は.wrap全体としてz-index:1に閉じ込められる
+       ため、意図に反してドックがモーダルより手前に出てしまう) -->
+  <nav class="site-dock" id="siteDock" data-i18n-aria-label="dock.ariaLabel" aria-label="クイックメニュー">
+    <button type="button" onclick="pfOpenModal()">
+      <span class="site-dock-icon" aria-hidden="true">🗂️</span>
+      <span class="site-dock-label" data-i18n="dock.profile">プロフィール</span>
+    </button>
+    <button type="button" onclick="pfIconOpenModal()">
+      <span class="site-dock-icon" aria-hidden="true">🎨</span>
+      <span class="site-dock-label" data-i18n="dock.customize">カスタマイズ</span>
+    </button>
+    <button type="button" onclick="openSidebar()">
+      <span class="site-dock-icon" aria-hidden="true">☰</span>
+      <span class="site-dock-label" data-i18n="dock.tools">ツール</span>
+    </button>
+    <button type="button" onclick="settingsOpenModal()">
+      <span class="site-dock-icon" aria-hidden="true">⚙️</span>
+      <span class="site-dock-label" data-i18n="dock.settings">表示設定</span>
+    </button>
+  </nav>
 </div>
 
 <script>
@@ -928,6 +976,13 @@
       homeScreenIconLabel: { ja: '📱 ホーム画面アイコン', en: '📱 Home Screen Icon' },
       customizeIconBtn: { ja: '🎨 アイコンを<br>カスタマイズ', en: '🎨 Customize Icon' },
       langToggleBtn: { ja: 'EN', en: '日本語' }
+    },
+    dock: {
+      ariaLabel: { ja: 'クイックメニュー', en: 'Quick menu' },
+      profile: { ja: 'プロフィール', en: 'Profiles' },
+      customize: { ja: 'カスタマイズ', en: 'Customize' },
+      tools: { ja: 'ツール', en: 'Tools' },
+      settings: { ja: '表示設定', en: 'Display' }
     },
     tools: {
       item: { ja: 'アイテム所持管理', en: 'Item Collection' },
@@ -2243,6 +2298,7 @@
     sidebarEl.classList.remove('sidebar-open');
     sidebarOverlayEl.classList.remove('is-visible');
   }
+  window.openSidebar = openSidebar; // サイトドックの「☰ ツール」ボタンから呼ばれる
   sidebarToggleBtn.addEventListener('click', function () {
     if (sidebarEl.classList.contains('sidebar-open')) closeSidebar(); else openSidebar();
   });
