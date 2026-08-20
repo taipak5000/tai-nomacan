@@ -755,6 +755,14 @@
         <span><b>Esc</b> — <span data-i18n="settings.shortcutCloseModal">開いているウィンドウを閉じる</span></span>
       </div>
 
+      <div class="sidebar-section-label" style="margin:18px 0 8px;" data-i18n="settings.customizeSectionLabel">🎨 表示のカスタマイズ</div>
+      <div class="toggle-field" style="margin-bottom:18px;">
+        <div class="toggle-text">
+          <span class="toggle-title" data-i18n="settings.customizeIconLabel">ホーム画面アイコン</span>
+        </div>
+        <button type="button" class="pf-icon-btn" onclick="settingsGoToIconCustomize()" data-i18n="settings.customizeBtn">🎨 カスタマイズ</button>
+      </div>
+
       <button type="button" class="pf-close-btn" data-i18n="profile.closeBtn" onclick="settingsCloseModal()">閉じる</button>
     </div>
   </div>
@@ -934,9 +942,9 @@
       <span class="site-dock-icon" aria-hidden="true">🗂️</span>
       <span class="site-dock-label" data-i18n="dock.profile">プロフィール</span>
     </button>
-    <button type="button" onclick="pfIconOpenModal()">
-      <span class="site-dock-icon" aria-hidden="true">🎨</span>
-      <span class="site-dock-label" data-i18n="dock.customize">カスタマイズ</span>
+    <button type="button" onclick="pfDashOpen()">
+      <span class="site-dock-icon" aria-hidden="true">🗓️</span>
+      <span class="site-dock-label" data-i18n="dock.dashboard">ダッシュボード</span>
     </button>
     <button type="button" onclick="openSidebar()">
       <span class="site-dock-icon" aria-hidden="true">☰</span>
@@ -980,7 +988,7 @@
     dock: {
       ariaLabel: { ja: 'クイックメニュー', en: 'Quick menu' },
       profile: { ja: 'プロフィール', en: 'Profiles' },
-      customize: { ja: 'カスタマイズ', en: 'Customize' },
+      dashboard: { ja: 'ダッシュボード', en: 'Dashboard' },
       tools: { ja: 'ツール', en: 'Tools' },
       settings: { ja: '表示設定', en: 'Display' }
     },
@@ -1116,7 +1124,10 @@
       shortcutsEnableLabel: { ja: 'ショートカットを有効にする', en: 'Enable keyboard shortcuts' },
       shortcutOpenSettings: { ja: 'この設定を開く', en: 'Open this settings panel' },
       shortcutToggleDark: { ja: 'ダークモード切替', en: 'Toggle dark mode' },
-      shortcutCloseModal: { ja: '開いているウィンドウを閉じる', en: 'Close the open window' }
+      shortcutCloseModal: { ja: '開いているウィンドウを閉じる', en: 'Close the open window' },
+      customizeSectionLabel: { ja: '🎨 表示のカスタマイズ', en: '🎨 Customization' },
+      customizeIconLabel: { ja: 'ホーム画面アイコン', en: 'Home screen icon' },
+      customizeBtn: { ja: '🎨 カスタマイズ', en: '🎨 Customize' }
     },
     footer: {
       disclaimer: { ja: 'このサイトはSky 星を紡ぐ子どもたちの非公式ファンサイトです。thatgamecompanyは一切関与していません。', en: 'This is an unofficial fan site for Sky: Children of the Light. thatgamecompany is not involved in any way.' },
@@ -2243,6 +2254,10 @@
     var overlay = document.getElementById('settingsModalOverlay');
     if (overlay) overlay.classList.remove('is-visible');
   }
+  function settingsGoToIconCustomize() {
+    settingsCloseModal();
+    pfIconOpenModal();
+  }
 
   window.pfIconOpenModal = pfIconOpenModal;
   window.pfIconCloseModal = pfIconCloseModal;
@@ -2255,6 +2270,7 @@
 
   window.settingsOpenModal = settingsOpenModal;
   window.settingsCloseModal = settingsCloseModal;
+  window.settingsGoToIconCustomize = settingsGoToIconCustomize;
   window.settingsToggleShortcuts = settingsToggleShortcuts;
 
   window.dmOpenModal = dmOpenModal;
