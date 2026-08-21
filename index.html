@@ -1618,6 +1618,22 @@
         var key = localStorage.key(k);
         if (key && key.indexOf('__p_' + id) !== -1) toRemove.push(key);
       }
+      // バグ修正: nsKey()は既定プロフィール(DEFAULT_PROFILE_ID)の場合、'__p_'+id を
+      // 付けない接尾辞なしの生のキー名をそのまま返す仕様のため、上のループ
+      // ('__p_'+id を含むキー)では既定プロフィール自身のデータを拾えない。
+      // 既定プロフィールを削除する場合は、nsKey()が接尾辞なしで返すこのファイル内の
+      // 既知キーを個別に対象へ追加する。
+      if (id === DEFAULT_PROFILE_ID) {
+        ['wishOwnCurrency', 'skyCurrencyExtra_v1', 'skyNomacanGoals_v1', 'skyNomacanCalc_v1', 'skyNomacanCalc_history_v1'].forEach(function (rawKey) {
+          if (toRemove.indexOf(rawKey) === -1) toRemove.push(rawKey);
+        });
+      }
+      // バグ修正: pfCompanionDataKey()(シーズンキャンドルの記録=companionツールのデータ)は
+      // 他のnsKey()系キーと違い、既定プロフィール以外では'__p_'ではなく'__'(pなし)を
+      // 接尾辞にしているため、上のループでは拾えない。どのプロフィールを削除する場合でも
+      // 個別に対象へ追加する(既定プロフィールの場合は接尾辞なしのキーになる)。
+      var companionKey = id === DEFAULT_PROFILE_ID ? 'sky_companion_v4_data' : ('sky_companion_v4_data__' + id);
+      if (toRemove.indexOf(companionKey) === -1) toRemove.push(companionKey);
       toRemove.forEach(function (key) { localStorage.removeItem(key); });
     } catch (e) { /* noop */ }
     if (wasActive) {
@@ -2257,7 +2273,33 @@
   // 「ホーム画面に追加」時に使われるアイコン（apple-touch-icon / manifest.json）を、
   // ユーザーが選んだ絵文字＋背景色、またはアップロード画像に差し替える。
   // プロフィール（保存枠）に関わらずこの端末・ブラウザ共通の設定のため、nsKeyは使わない。
-  var PF_ICON_STORAGE_KEY = 'pfCustomHomeIcon_v1';
+  //
+  // 🔑 保存キーをサイトごとに名前空間化する（プロフィール単位のnsKey()とは別軸）。
+  // taipak5000.github.io系サイトは全サイトが同一オリジンでlocalStorageを共有するため、
+  // 固定文字列のままだと、あるサイトで設定したホーム画面アイコンが他サイト（item/
+  // emote/companion/share/spirit-catalog/star-candle等）の設定まで上書きしてしまう
+  // （実際に競合することを確認済み）。location.pathnameの先頭セグメント
+  // （例: '/tai-nomacan/' → 'tai-nomacan'）は各サイトの実際の公開URLパスと一致し、
+  // リポジトリ名の変更にも自動追従するため、これをサイト識別子として使う
+  // （wings/tai-infoの同名関数と同じ実装）。
+  function pfSiteId() {
+    var seg = location.pathname.split('/').filter(Boolean)[0];
+    return seg || 'root';
+  }
+  var PF_ICON_STORAGE_KEY_OLD = 'pfCustomHomeIcon_v1';
+  var PF_ICON_STORAGE_KEY = 'pfCustomHomeIcon_v1__site_' + pfSiteId();
+
+  // 旧: 全サイト共通の固定キーで保存されていたため、既存ユーザーの設定が残っている
+  // 場合がある。新（サイト名前空間化）キーにまだ何も保存されていない場合に限り、
+  // 旧キーの値を一度だけ新キーへコピーして引き継ぐ（既にカスタマイズ済みのユーザーの
+  // 設定が新キー導入によって消えてしまわないようにするため）。
+  (function pfMigrateIconStorageKey() {
+    try {
+      if (localStorage.getItem(PF_ICON_STORAGE_KEY) !== null) return;
+      var old = localStorage.getItem(PF_ICON_STORAGE_KEY_OLD);
+      if (old !== null) localStorage.setItem(PF_ICON_STORAGE_KEY, old);
+    } catch (e) { /* ignore */ }
+  })();
   var pfIconOriginalAppleHref = (function () {
     var el = document.querySelector('link[rel="apple-touch-icon"]');
     return el ? el.href : 'icons/app-icon-192.png';
@@ -2533,6 +2575,19 @@
     return typeof v === 'string' ? v : (v !== undefined && v !== null ? String(v) : '');
   }
 
+  // バグ修正: 所持本数・目標本数・使用予定本数の各入力欄(number)はmin="0"が
+  // 付いていても、直接入力やペーストで負の値・不正な値を打ち込めてしまう。
+  // 計算処理側は元々どこでもMath.max(0, parseFloat(v) || 0)で正しくクランプ
+  // 済みの値を使っていたが、保存・読み込みだけは入力欄の生の文字列をそのまま
+  // 扱っていたため、リロードを挟んでも無効な値がUI上に残り続けてしまっていた。
+  // 保存時・読み込み時の両方でこの関数を通し、負の値・非数値は"0"に正規化する
+  // (空文字は単に未入力なだけなので、そのまま維持する)。
+  function sanitizeNumericFieldValue(raw) {
+    if (raw === undefined || raw === null || raw === '') return '';
+    var n = parseFloat(raw);
+    return (!isFinite(n) || n < 0) ? '0' : raw;
+  }
+
   // 保存済みのgoalsデータを読み込み、壊れた/不正な項目を除外した形で返す。
   // 有効なデータが無ければnull(=マイグレーション/初期化が必要)を返す。
   function goalLoadDataRaw() {
@@ -2589,16 +2644,16 @@
   // ここで確実に行われる。
   function loadActiveGoalIntoFields() {
     var g = goalGetActive();
-    els.target.value = g.target || '';
-    els.plannedUsage.value = g.plannedUsage || '';
+    els.target.value = sanitizeNumericFieldValue(g.target || '');
+    els.plannedUsage.value = sanitizeNumericFieldValue(g.plannedUsage || '');
     els.targetDate.value = g.targetDate || '';
   }
   // 目標設定カードの入力欄(els.target等)の現在値を、アクティブな目標へ書き戻す。
   function saveActiveGoalFields() {
     var data = goalEnsureInit();
     var g = goalGetActive(data);
-    g.target = els.target.value;
-    g.plannedUsage = els.plannedUsage.value;
+    g.target = sanitizeNumericFieldValue(els.target.value);
+    g.plannedUsage = sanitizeNumericFieldValue(els.plannedUsage.value);
     g.targetDate = els.targetDate.value;
     goalSaveData(data);
   }
@@ -2809,7 +2864,7 @@
   function saveState() {
     try {
       var state = {
-        current: els.current.value,
+        current: sanitizeNumericFieldValue(els.current.value),
         dailyRate: els.dailyRate.value,
         heartsToSend: els.heartsToSend.value
       };
@@ -2822,7 +2877,7 @@
       var raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         var state = JSON.parse(raw);
-        if (state.current !== undefined) els.current.value = state.current;
+        if (state.current !== undefined) els.current.value = sanitizeNumericFieldValue(state.current);
         if (state.dailyRate !== undefined) els.dailyRate.value = state.dailyRate;
         if (state.heartsToSend !== undefined) els.heartsToSend.value = state.heartsToSend;
       }
