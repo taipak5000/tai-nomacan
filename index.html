@@ -39,7 +39,15 @@
     --amber-light: #FFC168;
     --amber-deep: #C56E06;
     --text: #3A2E22;
-    --text-dim: #8C7A65;
+    /* ⚙️ 表示設定 - ライトモード配色: ダークモードの --text-dim は本日 WCAG AA
+       4.5:1以上を確保するため明度調整済み（上記コメント参照）だったが、ライトモード側の
+       --text-dim（ラベル・キャプション等の補助テキストに使用）は未調整のまま実際の背景
+       （カード背景 #FFFFFF・#FFFDF8、--cream #FFF8EE、--cream-deep #FCEEDA 等）に対して
+       4.5:1を下回っていた（元の #8C7A65 は白背景で約4.13:1、--cream-deep背景では約3.61:1
+       しかなく基準未達）。同じ基準を満たすよう明度を落として調整（白背景で約6.6:1、
+       --cream-deep背景でも約5.8:1を確保。手計算ではなくWCAG式で実測して確認済み）。
+       すぐ下の :root[data-theme="dark"] 側の値は変更していない。 */
+    --text-dim: #6C5A42;
     --border: rgba(58,46,34,0.12);
     --green: #3FA35C;
     --red: #D9502B;
@@ -465,11 +473,14 @@
   }
   .history-clear-btn:hover { color: var(--red); }
 
-  footer { text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 24px; line-height: 1.8; opacity: 0.85; }
+  /* opacity: 0.85 は付けない — --text-dim を薄める形になり、ライトモードでの
+     実際の描画結果（背景色とのアルファ合成後の色）で計算すると再び4.5:1を
+     下回ってしまうため（WCAG AAコントラスト比の対応。上記 --text-dim のコメント参照）。 */
+  footer { text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 24px; line-height: 1.8; }
   footer a { color: var(--amber-deep); }
   footer a:hover { color: var(--amber); }
 
-  a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  a:focus-visible, button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 
   @media (max-width: 360px) { .wrap { padding: 30px 14px 44px; } }
 
@@ -668,7 +679,7 @@
       </div>
       <p class="pf-hint" data-i18n="profile.switchHint">プロフィールを切り替えると、目標設定などがそのプロフィール専用の保存内容に切り替わります。サブアカウントなど複数アカウントをお持ちの方にご利用いただけます。</p>
       <div class="pf-currency-section">
-        <div class="pf-currency-title" onclick="pfToggleCurrency()">
+        <div class="pf-currency-title" id="pfCurrencyTitle" tabindex="0" role="button" aria-expanded="true" aria-controls="pfCurrencyBody" onclick="pfToggleCurrency()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); pfToggleCurrency();}">
           <span data-i18n="currency.sectionLabel">💰 所持通貨</span>
           <span class="pf-currency-toggle-label" id="pfCurrencyToggleLabel" data-i18n="currency.toggleCloseLabel">閉じる ▲</span>
         </div>
@@ -1439,10 +1450,17 @@
   function pfSaveProfiles(list) {
     try { localStorage.setItem(PROFILES_KEY, JSON.stringify(list)); } catch (e) { /* noop */ }
   }
+  // 「メイン」（デフォルトプロフィール）の初期名は、生成時のUI言語で固定した
+  // 文字列としてではなく、常にこの日本語リテラル自体を「未リネームである」ことを
+  // 示すマーカーとして保存する（taipak5000.github.io系の他ツール(wings等)と同じ
+  // 考え方）。表示時は pfDisplayName() が都度その時点のUI言語へ翻訳する。
+  // ユーザーが明示的にリネームした場合は、そのまま入力された文字列を保存・表示する
+  // （保存データ自体は書き換えない）。
+  var PF_DEFAULT_NAME_MARKER = 'メイン';
   function pfEnsureInit() {
     var list = pfLoadProfiles();
     if (!list) {
-      list = [{ id: DEFAULT_PROFILE_ID, name: t('profile.defaultName') }];
+      list = [{ id: DEFAULT_PROFILE_ID, name: PF_DEFAULT_NAME_MARKER }];
       pfSaveProfiles(list);
     }
     try {
@@ -1454,11 +1472,18 @@
     try { return localStorage.getItem(ACTIVE_PROFILE_KEY) || DEFAULT_PROFILE_ID; } catch (e) { return DEFAULT_PROFILE_ID; }
   }
   function pfGetActiveProfile() {
-    var list = pfLoadProfiles() || [{ id: DEFAULT_PROFILE_ID, name: t('profile.defaultName') }];
+    var list = pfLoadProfiles() || [{ id: DEFAULT_PROFILE_ID, name: PF_DEFAULT_NAME_MARKER }];
     var id = pfGetActiveId();
     var found = null;
     for (var i = 0; i < list.length; i++) { if (list[i].id === id) { found = list[i]; break; } }
     return found || list[0];
+  }
+  // デフォルトプロフィールが未リネーム（名前がマーカーのまま）の場合だけ、表示名を
+  // 現在のUI言語へ翻訳する。バグ修正: 言語切替後もプロフィールバー/ドックラベル/
+  // 切替モーダルで「メイン」が日本語のまま固定されていた問題への対応。
+  function pfDisplayName(p) {
+    if (!p) return '';
+    return (p.id === DEFAULT_PROFILE_ID && p.name === PF_DEFAULT_NAME_MARKER) ? t('profile.defaultName') : p.name;
   }
 
   // プロフィールごとのアカウントカラー（任意）。フォントやボタンではなく画面背景への
@@ -1586,13 +1611,14 @@
     pfApplyThemeColor(active.color);
     var bar = document.getElementById('pfBar');
     if (bar) {
-      bar.innerHTML = '<span class="pf-bar-text" onclick="pfOpenModal()">🗂️ <b>' + pfEscapeHtml(active.name) + '</b>&nbsp;' + t('profile.barActiveSuffix') + '</span>' +
+      bar.innerHTML = '<span class="pf-bar-text" tabindex="0" role="button" onclick="pfOpenModal()" ' +
+        'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); pfOpenModal();}">🗂️ <b>' + pfEscapeHtml(pfDisplayName(active)) + '</b>&nbsp;' + t('profile.barActiveSuffix') + '</span>' +
         '<button type="button" class="pf-dash-btn" onclick="pfDashOpen()" title="' + t('profile.dashboardBtnTitle') + '">🗓️</button>';
     }
     // 画面下部クイックメニュー(ドック)のプロフィールボタンにも、現在アクティブな
     // プロフィール名を反映する(固定の「プロフィール」ラベルではなく)。
     var dockLabel = document.getElementById('siteDockProfileLabel');
-    if (dockLabel) dockLabel.textContent = active.name;
+    if (dockLabel) dockLabel.textContent = pfDisplayName(active);
   }
 
   /* ================================================================
@@ -1784,6 +1810,24 @@
       return now <= end && (!start || now >= start);
     });
   }
+  // 🌐 ダッシュボードのシーズン・イベント名の英語対訳表。
+  // ダッシュボードのシーズン/イベント名は、本家データ(item/index.htmlのCURRENT_SEASON・
+  // EVENT_SCHEDULE)を直接fetchして流用しているため日本語の生文字列しか持っておらず、
+  // item側を変更できない(このリポジトリの管轄外の)以上、英語モードでもそのまま日本語で
+  // 表示されてしまう。item側を変更せずに済むよう、判明している名前だけをここでtai-nomacan
+  // 側のローカル対訳表として翻訳する。表に無い名前（今後の新シーズン・新イベント等）は
+  // 安全に日本語の原文のまま表示する(フェイルセーフ)。新しい名前が登場したら随時追加する。
+  var DASH_NAME_EN = {
+    '親愛なるファン・ゴッホへ': 'Dear Vincent van Gogh',
+    '陽光の日々': 'Days of Sunlight',
+    '光に染まるイベント': 'Dyed in Light',
+    '来訪する精霊団': 'Traveling Spirits',
+    '夏のキャンプ': 'Summer Camp'
+  };
+  function pfDashLocalizeName(name) {
+    if (LANG !== 'en' || typeof name !== 'string') return name;
+    return DASH_NAME_EN[name] !== undefined ? DASH_NAME_EN[name] : name;
+  }
   function pfDashRow(icon, html) {
     return '<div class="dash-row"><span class="dash-row-icon">' + icon + '</span><span class="dash-row-text">' + html + '</span></div>';
   }
@@ -1819,10 +1863,10 @@
 
     var todayRows = [];
     if (data.season && data.season.name && data.season.endDate && new Date() < new Date(data.season.endDate)) {
-      todayRows.push(pfDashRow('🌟', '<b>' + pfEscapeHtml(data.season.name) + '</b>' + t('dashboard.currentlyActive')));
+      todayRows.push(pfDashRow('🌟', '<b>' + pfEscapeHtml(pfDashLocalizeName(data.season.name)) + '</b>' + t('dashboard.currentlyActive')));
     }
     pfDashActiveScheduledEvents(data.eventSchedule).forEach(function (ev) {
-      todayRows.push(pfDashRow('🌟', '<b>' + pfEscapeHtml(ev.name) + '</b>' + t('dashboard.currentlyActive') + '<span class="dash-countdown">' + t('dashboard.endsIn') + ' ' + pfDashCountdown(new Date(ev.end)) + '</span>'));
+      todayRows.push(pfDashRow('🌟', '<b>' + pfEscapeHtml(pfDashLocalizeName(ev.name)) + '</b>' + t('dashboard.currentlyActive') + '<span class="dash-countdown">' + t('dashboard.endsIn') + ' ' + pfDashCountdown(new Date(ev.end)) + '</span>'));
     });
     var rv = pfDashRevisitStatus(data.revisit);
     if (rv && data.revisit) {
@@ -1844,7 +1888,7 @@
     var monthHtml;
     if (data.season && data.season.endDate) {
       var end = new Date(data.season.endDate);
-      monthHtml = pfDashRow('🎨', t('dashboard.quoteOpen') + '<b>' + pfEscapeHtml(data.season.name) + '</b>' + t('dashboard.quoteClose') + t('dashboard.seasonEndsInSuffix') + '<span class="dash-countdown">' + pfDashCountdown(end) + '</span>');
+      monthHtml = pfDashRow('🎨', t('dashboard.quoteOpen') + '<b>' + pfEscapeHtml(pfDashLocalizeName(data.season.name)) + '</b>' + t('dashboard.quoteClose') + t('dashboard.seasonEndsInSuffix') + '<span class="dash-countdown">' + pfDashCountdown(end) + '</span>');
     } else {
       monthHtml = '<div class="dash-empty">' + t('dashboard.seasonLoadFailed') + '</div>';
     }
@@ -1913,7 +1957,7 @@
       }
       if (pfDeletingId === p.id) {
         html += '<div class="pf-row" style="flex-wrap: wrap;">' +
-          '<span class="pf-row-confirm-text">' + t('profile.deleteConfirmText', { name: pfEscapeHtml(p.name) }) + '</span>' +
+          '<span class="pf-row-confirm-text">' + t('profile.deleteConfirmText', { name: pfEscapeHtml(pfDisplayName(p)) }) + '</span>' +
           '<button type="button" class="pf-icon-btn pf-row-btn-danger" onclick="pfConfirmDeleteInline(\'' + p.id + '\')">' + t('profile.deleteBtn') + '</button>' +
           '<button type="button" class="pf-icon-btn" onclick="pfCancelRowState()">' + t('profile.cancelBtn') + '</button>' +
           '</div>';
@@ -1922,7 +1966,8 @@
       var colorVal = pfIsSafeColor(p.color) ? p.color : '#E8850A';
       html += '<div class="pf-row' + (p.id === activeId ? ' active' : '') + '">' +
         '<input type="color" class="pf-color-input" value="' + colorVal + '" title="' + t('profile.accountColorTitle') + '" onchange="pfSetProfileColor(\'' + p.id + '\', this.value)">' +
-        '<span class="pf-row-name" onclick="pfSwitchProfile(\'' + p.id + '\')">' + (p.id === activeId ? '✅ ' : '') + pfEscapeHtml(p.name) + '</span>' +
+        '<span class="pf-row-name" tabindex="0" role="button" onclick="pfSwitchProfile(\'' + p.id + '\')" ' +
+        'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); pfSwitchProfile(\'' + p.id + '\');}">' + (p.id === activeId ? '✅ ' : '') + pfEscapeHtml(pfDisplayName(p)) + '</span>' +
         (p.color ? '<button type="button" class="pf-icon-btn pf-color-clear-btn" title="' + t('profile.resetColorTitle') + '" onclick="pfClearProfileColor(\'' + p.id + '\')">↺</button>' : '') +
         '<button type="button" class="pf-icon-btn" onclick="pfStartRename(\'' + p.id + '\')">✏️</button>' +
         (list.length > 1 ? '<button type="button" class="pf-icon-btn" onclick="pfStartDelete(\'' + p.id + '\')">🗑️</button>' : '') +
@@ -2052,8 +2097,10 @@
   function pfSyncCurrencyToggleUI() {
     var body = document.getElementById('pfCurrencyBody');
     var label = document.getElementById('pfCurrencyToggleLabel');
+    var title = document.getElementById('pfCurrencyTitle');
     if (body) body.style.display = pfCurrencyOpen ? '' : 'none';
     if (label) label.textContent = pfCurrencyOpen ? t('currency.toggleCloseLabel') : t('currency.toggleOpenLabel');
+    if (title) title.setAttribute('aria-expanded', pfCurrencyOpen ? 'true' : 'false');
   }
 
   function pfOpenModal() {
@@ -2520,7 +2567,8 @@
     var active = goalGetActive(data);
     var bar = document.getElementById('goalSwitchBar');
     if (!bar) return;
-    bar.innerHTML = '<span class="goal-bar-text" onclick="goalOpenModal()">🎯 <b>' + pfEscapeHtml(active.name) + '</b>&nbsp;' + t('goalMulti.barActiveSuffix') + '</span>' +
+    bar.innerHTML = '<span class="goal-bar-text" tabindex="0" role="button" onclick="goalOpenModal()" ' +
+      'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); goalOpenModal();}">🎯 <b>' + pfEscapeHtml(active.name) + '</b>&nbsp;' + t('goalMulti.barActiveSuffix') + '</span>' +
       '<button type="button" class="pf-dash-btn" onclick="goalOpenModal()" title="' + t('goalMulti.manageBtnTitle') + '">🗂️</button>';
   }
 
@@ -2553,7 +2601,8 @@
         return;
       }
       html += '<div class="pf-row' + (g.id === activeId ? ' active' : '') + '">' +
-        '<span class="pf-row-name" onclick="goalSwitch(\'' + g.id + '\')">' + (g.id === activeId ? '✅ ' : '') + pfEscapeHtml(g.name) + '</span>' +
+        '<span class="pf-row-name" tabindex="0" role="button" onclick="goalSwitch(\'' + g.id + '\')" ' +
+        'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); goalSwitch(\'' + g.id + '\');}">' + (g.id === activeId ? '✅ ' : '') + pfEscapeHtml(g.name) + '</span>' +
         '<button type="button" class="pf-icon-btn" onclick="goalStartRename(\'' + g.id + '\')">✏️</button>' +
         (data.goals.length > 1 ? '<button type="button" class="pf-icon-btn" onclick="goalStartDelete(\'' + g.id + '\')">🗑️</button>' : '') +
         '</div>';
