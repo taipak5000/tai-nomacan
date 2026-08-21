@@ -37,7 +37,17 @@
     --card-bg: #FFFFFF;
     --amber: #E8850A;
     --amber-light: #FFC168;
-    --amber-deep: #C56E06;
+    /* ⚙️ 表示設定 - ライトモード配色: ダークモード側の --amber-deep / --red は
+       WCAG AA 4.5:1以上を確保するため明度調整済み（下記コメント参照）だったが、
+       ライトモード側の --amber-deep・--red・--green（見出し・警告文・履歴の増減量
+       などに使用）は未調整のまま、実際の背景（カード背景 #FFFFFF、--cream #FFF8EE、
+       --cream-deep #FCEEDA 等）に対して4.5:1を下回っていた（元の値はそれぞれ
+       #C56E06が白背景で約3.75:1・--cream-deep背景で約3.28:1、#D9502Bが約4.09:1・
+       約3.58:1、#3FA35Cが約3.18:1・約2.78:1しかなく、いずれも基準未達）。
+       同じ色相を保ったまま明度を落として調整（--cream-deep背景でも4.5:1以上を確保。
+       手計算ではなくWCAG式で実測して確認済み）。すぐ下の
+       :root[data-theme="dark"] 側の値（--green含む）は変更していない。 */
+    --amber-deep: #A05905;
     --text: #3A2E22;
     /* ⚙️ 表示設定 - ライトモード配色: ダークモードの --text-dim は本日 WCAG AA
        4.5:1以上を確保するため明度調整済み（上記コメント参照）だったが、ライトモード側の
@@ -49,13 +59,16 @@
        すぐ下の :root[data-theme="dark"] 側の値は変更していない。 */
     --text-dim: #6C5A42;
     --border: rgba(58,46,34,0.12);
-    --green: #3FA35C;
-    --red: #D9502B;
+    --green: #2F7A45;
+    --red: #B84425;
   }
 
-  /* ⚙️ 表示設定 - ダークモード配色（既存の --amber / --amber-light / --green は
-     そのままの色相を維持。--amber-deep と --red のみ、暗い背景上でのテキストとしての
-     コントラスト比(WCAG AA・4.5:1以上)を確保するため明度を上げている） */
+  /* ⚙️ 表示設定 - ダークモード配色（既存の --amber / --amber-light は
+     そのままの色相を維持。--amber-deep と --red は、暗い背景上でのテキストとしての
+     コントラスト比(WCAG AA・4.5:1以上)を確保するため明度を上げている。--green は
+     元の色相・明度のままで暗い背景に対して既に4.5:1以上を満たすため、上記
+     :root側でライトモード用に明度を落とした値を継承しないよう、ここで元の値を
+     明示的に指定し直している） */
   :root[data-theme="dark"] {
     --cream: #1B140D;
     --cream-deep: #241B10;
@@ -64,6 +77,7 @@
     --text: #F5ECE0;
     --text-dim: #B7A78E;
     --border: rgba(255,241,224,0.14);
+    --green: #3FA35C;
     --red: #FF6B47;
   }
   /* CSS変数化されていない直書きの背景色（入力欄・ポップアップ・モーダル・
@@ -674,7 +688,7 @@
       <h3 data-i18n="profile.modalTitle">🗂️ プロフィール（保存枠）</h3>
       <div id="pfModalBody"></div>
       <div class="pf-add-row">
-        <input type="text" id="pfNewProfileInput" class="pf-input" data-i18n-placeholder="profile.newNamePlaceholder" placeholder="新しいプロフィール名" maxlength="20">
+        <input type="text" id="pfNewProfileInput" class="pf-input" data-i18n-placeholder="profile.newNamePlaceholder" placeholder="新しいプロフィール名" maxlength="20" onkeydown="if(event.key==='Enter'){event.preventDefault(); pfAddProfile();}">
         <button type="button" class="pf-add-btn" data-i18n="profile.addBtn" onclick="pfAddProfile()">追加</button>
       </div>
       <p class="pf-hint" data-i18n="profile.switchHint">プロフィールを切り替えると、目標設定などがそのプロフィール専用の保存内容に切り替わります。サブアカウントなど複数アカウントをお持ちの方にご利用いただけます。</p>
@@ -696,7 +710,7 @@
       <h3 data-i18n="goalMulti.modalTitle">🗂️ 目標（複数目標管理）</h3>
       <div id="goalModalBody"></div>
       <div class="pf-add-row">
-        <input type="text" id="goalNewGoalInput" class="pf-input" data-i18n-placeholder="goalMulti.newNamePlaceholder" placeholder="新しい目標名" maxlength="20">
+        <input type="text" id="goalNewGoalInput" class="pf-input" data-i18n-placeholder="goalMulti.newNamePlaceholder" placeholder="新しい目標名" maxlength="20" onkeydown="if(event.key==='Enter'){event.preventDefault(); goalAdd();}">
         <button type="button" class="pf-add-btn" data-i18n="profile.addBtn" onclick="goalAdd()">追加</button>
       </div>
       <p class="pf-hint" data-i18n="goalMulti.hint">複数の目標を切り替えて管理できます。目標を切り替えると、目標本数・使用予定本数・目標日がその目標専用の内容に切り替わります(所持本数・集めペースはプロフィール共通です)。</p>
@@ -1562,6 +1576,14 @@
 
   function pfSwitchProfile(id) {
     if (id === pfGetActiveId()) { pfCloseModal(); return; }
+    // バグ修正: アクティブプロフィールのポインタを書き換える前に、所持本数欄の
+    // デバウンス確定(commitCurrentValue、約900ms後)がまだ済んでいなければ、
+    // ここで今の(切替前の)プロフィールへ同期的に確定させておく。これをしないと、
+    // タイマーがpagehide/visibilitychange任せになり、発火するタイミング次第では
+    // ポインタが新プロフィールに変わった後・reload直前に確定してしまい、編集内容が
+    // 誤って新プロフィール側のストレージへ書き込まれてしまう(履歴は旧プロフィール側
+    // に残ったまま)。
+    commitCurrentValue();
     try { localStorage.setItem(ACTIVE_PROFILE_KEY, id); } catch (e) { /* noop */ }
     location.reload();
   }
@@ -1581,6 +1603,13 @@
   function pfDeleteProfile(id) {
     var list = pfLoadProfiles() || [];
     if (list.length <= 1) return;
+    var wasActive = pfGetActiveId() === id;
+    // バグ修正: 削除対象が現在アクティブなプロフィールの場合、アクティブポインタを
+    // 書き換える前に、所持本数欄のデバウンス確定が済んでいなければ今のプロフィール
+    // (=これから削除される側)へ先に確定させておく(pfSwitchProfileと同じ理由。
+    // どのみちこの後すぐ削除されるデータだが、タイマーを止めておかないと発火時に
+    // 新プロフィール側のポインタへ誤って書き込まれる可能性がある)。
+    if (wasActive) commitCurrentValue();
     var remaining = list.filter(function (p) { return p.id !== id; });
     pfSaveProfiles(remaining);
     try {
@@ -1591,7 +1620,7 @@
       }
       toRemove.forEach(function (key) { localStorage.removeItem(key); });
     } catch (e) { /* noop */ }
-    if (pfGetActiveId() === id) {
+    if (wasActive) {
       try { localStorage.setItem(ACTIVE_PROFILE_KEY, remaining[0].id); } catch (e) { /* noop */ }
       location.reload();
       return;
@@ -2482,6 +2511,18 @@
      ================================================================ */
   var GOALS_KEY = nsKey('skyNomacanGoals_v1');
 
+  // プロフィールの既定名(PF_DEFAULT_NAME_MARKER/pfDisplayName)と同じ考え方で、
+  // goalEnsureInit()が自動作成する既定の目標名も、生成時のUI言語で固定した
+  // 翻訳済み文字列としてではなく、常にこの日本語リテラル自体を「未リネームである」
+  // ことを示すマーカーとして保存する。表示時はgoalDisplayName()が都度その時点の
+  // UI言語へ翻訳する。ユーザーが明示的にリネームした場合は、そのまま入力された
+  // 文字列を保存・表示する(保存データ自体は書き換えない)。
+  var GOAL_DEFAULT_NAME_MARKER = '目標';
+  function goalDisplayName(g) {
+    if (!g) return '';
+    return g.name === GOAL_DEFAULT_NAME_MARKER ? t('goal.defaultGoalName') : g.name;
+  }
+
   function goalIsSafeId(id) {
     return typeof id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(id);
   }
@@ -2528,7 +2569,7 @@
     try { legacy = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (e) { legacy = {}; }
     var goal = {
       id: goalGenId(),
-      name: t('goal.defaultGoalName'),
+      name: GOAL_DEFAULT_NAME_MARKER,
       target: goalFieldToString(legacy.target),
       plannedUsage: goalFieldToString(legacy.plannedUsage),
       targetDate: goalFieldToString(legacy.targetDate)
@@ -2568,7 +2609,7 @@
     var bar = document.getElementById('goalSwitchBar');
     if (!bar) return;
     bar.innerHTML = '<span class="goal-bar-text" tabindex="0" role="button" onclick="goalOpenModal()" ' +
-      'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); goalOpenModal();}">🎯 <b>' + pfEscapeHtml(active.name) + '</b>&nbsp;' + t('goalMulti.barActiveSuffix') + '</span>' +
+      'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); goalOpenModal();}">🎯 <b>' + pfEscapeHtml(goalDisplayName(active)) + '</b>&nbsp;' + t('goalMulti.barActiveSuffix') + '</span>' +
       '<button type="button" class="pf-dash-btn" onclick="goalOpenModal()" title="' + t('goalMulti.manageBtnTitle') + '">🗂️</button>';
   }
 
@@ -2594,7 +2635,7 @@
       }
       if (goalDeletingId === g.id) {
         html += '<div class="pf-row" style="flex-wrap: wrap;">' +
-          '<span class="pf-row-confirm-text">' + t('goalMulti.deleteConfirmText', { name: pfEscapeHtml(g.name) }) + '</span>' +
+          '<span class="pf-row-confirm-text">' + t('goalMulti.deleteConfirmText', { name: pfEscapeHtml(goalDisplayName(g)) }) + '</span>' +
           '<button type="button" class="pf-icon-btn pf-row-btn-danger" onclick="goalConfirmDeleteInline(\'' + g.id + '\')">' + t('profile.deleteBtn') + '</button>' +
           '<button type="button" class="pf-icon-btn" onclick="goalCancelRowState()">' + t('profile.cancelBtn') + '</button>' +
           '</div>';
@@ -2602,7 +2643,7 @@
       }
       html += '<div class="pf-row' + (g.id === activeId ? ' active' : '') + '">' +
         '<span class="pf-row-name" tabindex="0" role="button" onclick="goalSwitch(\'' + g.id + '\')" ' +
-        'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); goalSwitch(\'' + g.id + '\');}">' + (g.id === activeId ? '✅ ' : '') + pfEscapeHtml(g.name) + '</span>' +
+        'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); goalSwitch(\'' + g.id + '\');}">' + (g.id === activeId ? '✅ ' : '') + pfEscapeHtml(goalDisplayName(g)) + '</span>' +
         '<button type="button" class="pf-icon-btn" onclick="goalStartRename(\'' + g.id + '\')">✏️</button>' +
         (data.goals.length > 1 ? '<button type="button" class="pf-icon-btn" onclick="goalStartDelete(\'' + g.id + '\')">🗑️</button>' : '') +
         '</div>';
@@ -2887,14 +2928,20 @@
       wrap.innerHTML = '<p class="trend-chart-empty">' + t('history.trendEmpty') + '</p>';
       return;
     }
+    // バグ修正: 破線の目標ラインは目標本数だけでなく、結果カードや目標日からの
+    // 逆算(update()内のeffectiveTarget)と同じく使用予定本数(plannedUsage)を
+    // 上乗せした「実質的な目標」を反映する。そうしないと使用予定本数がある場合に、
+    // 実際にはまだ目標未達なのに、グラフ上では目標ラインに到達済みのように見えてしまう。
     var target = Math.max(0, parseFloat(els.target.value) || 0);
+    var plannedUsage = Math.max(0, parseFloat(els.plannedUsage.value) || 0);
+    var effectiveTarget = target + plannedUsage;
     var W = 300, H = 84, padX = 4, padY = 10;
     var minT = points[0].time;
     var maxT = points[points.length - 1].time;
     var spanT = Math.max(1, maxT - minT);
     var maxV = 0;
     for (var i = 0; i < points.length; i++) { if (points[i].value > maxV) maxV = points[i].value; }
-    if (target > 0 && target > maxV) maxV = target;
+    if (effectiveTarget > 0 && effectiveTarget > maxV) maxV = effectiveTarget;
     maxV = (maxV || 1) * 1.08;
     function xOf(t) { return padX + ((t - minT) / spanT) * (W - padX * 2); }
     function yOf(v) { return H - padY - (v / maxV) * (H - padY * 2); }
@@ -2902,8 +2949,8 @@
     var last = points[points.length - 1];
     var areaD = pathD + ' L' + xOf(last.time).toFixed(1) + ',' + (H - padY).toFixed(1) + ' L' + xOf(points[0].time).toFixed(1) + ',' + (H - padY).toFixed(1) + ' Z';
     var targetLineSvg = '';
-    if (target > 0 && target <= maxV) {
-      var ty = yOf(target).toFixed(1);
+    if (effectiveTarget > 0 && effectiveTarget <= maxV) {
+      var ty = yOf(effectiveTarget).toFixed(1);
       targetLineSvg = '<line x1="' + padX + '" y1="' + ty + '" x2="' + (W - padX) + '" y2="' + ty + '" stroke="var(--amber-deep)" stroke-width="1" stroke-dasharray="4 3" opacity="0.75" />' +
         '<text x="' + (W - padX) + '" y="' + Math.max(8, parseFloat(ty) - 3) + '" text-anchor="end" font-size="8" fill="var(--amber-deep)">' + t('history.trendTargetLabel') + '</text>';
     }
