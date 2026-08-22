@@ -9,10 +9,14 @@
 (function () {
   // ⚙️ 表示設定（ダークモード）: taipak5000.github.io 配下の各ツール共通の
   // 'sky_app_theme' キーを読み、CSS適用前にできるだけ早く data-theme を確定させる
-  // (フラッシュ・オブ・ライトモード防止)。値が無い場合はOSの配色設定に従う。
+  // (フラッシュ・オブ・ライトモード防止)。値は 'light' / 'dark' / 'system' の
+  // いずれかを取り得て、'system'（または未設定）の場合はOSの配色設定に従う。
+  // ここでの解決ロジックは、後半のメインscript内で定義される共有ヘルパー
+  // resolveEffectiveTheme() と挙動を完全に一致させること（このscriptは他の
+  // scriptより先に単独で動く必要があるため、ここだけロジックを複製している）。
   try {
     var storedTheme = localStorage.getItem('sky_app_theme');
-    var isDark = storedTheme === 'dark' || (storedTheme === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    var isDark = storedTheme === 'dark' || ((storedTheme === 'system' || storedTheme === null) && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
     var csm = document.querySelector('meta[name="color-scheme"]');
     if (csm) csm.setAttribute('content', isDark ? 'dark' : 'light');
@@ -822,9 +826,9 @@
       <div class="sidebar-section-label" style="margin:0 0 8px;" data-i18n="settings.displaySectionLabel">🌙 表示</div>
       <div class="toggle-field" style="margin-bottom:18px;">
         <div class="toggle-text">
-          <span class="toggle-title" data-i18n="settings.darkModeLabel">ダークモード</span>
+          <span class="toggle-title" data-i18n="settings.darkModeLabel">外観モード</span>
         </div>
-        <button type="button" class="pf-icon-btn" id="settingsThemeToggleBtn" onclick="toggleTheme()">🌙 ダーク</button>
+        <button type="button" class="pf-icon-btn" id="settingsThemeToggleBtn" onclick="toggleTheme()" aria-label="外観モード: 🖥️ システム（クリックで☀️ ライトに切替）">☀️ ライト</button>
       </div>
 
       <div class="sidebar-section-label" style="margin:0 0 8px;" data-i18n="settings.shortcutsSectionLabel">⌨️ キーボードショートカット</div>
@@ -836,7 +840,7 @@
       </div>
       <div class="pf-hint" style="line-height:2.1; margin-top:0;">
         <span><b>?</b> — <span data-i18n="settings.shortcutOpenSettings">この設定を開く</span></span><br>
-        <span><b>D</b> — <span data-i18n="settings.shortcutToggleDark">ダークモード切替</span></span><br>
+        <span><b>D</b> — <span data-i18n="settings.shortcutToggleDark">外観モード切替（ライト/ダーク/システム）</span></span><br>
         <span><b>Esc</b> — <span data-i18n="settings.shortcutCloseModal">開いているウィンドウを閉じる</span></span>
       </div>
 
@@ -1219,13 +1223,15 @@
       entryBtn: { ja: '⚙️ 表示設定を開く', en: 'Open Display Settings' },
       modalTitle: { ja: '⚙️ 表示設定', en: '⚙️ Display Settings' },
       displaySectionLabel: { ja: '🌙 表示', en: '🌙 Display' },
-      darkModeLabel: { ja: 'ダークモード', en: 'Dark Mode' },
+      darkModeLabel: { ja: '外観モード', en: 'Appearance' },
       themeToggleToDark: { ja: '🌙 ダーク', en: '🌙 Dark' },
       themeToggleToLight: { ja: '☀️ ライト', en: '☀️ Light' },
+      themeToggleToSystem: { ja: '🖥️ システム', en: '🖥️ System' },
+      themeToggleAria: { ja: '外観モード: {current}（クリックで{next}に切替）', en: 'Appearance: {current} (click to switch to {next})' },
       shortcutsSectionLabel: { ja: '⌨️ キーボードショートカット', en: '⌨️ Keyboard Shortcuts' },
       shortcutsEnableLabel: { ja: 'ショートカットを有効にする', en: 'Enable keyboard shortcuts' },
       shortcutOpenSettings: { ja: 'この設定を開く', en: 'Open this settings panel' },
-      shortcutToggleDark: { ja: 'ダークモード切替', en: 'Toggle dark mode' },
+      shortcutToggleDark: { ja: '外観モード切替（ライト/ダーク/システム）', en: 'Cycle appearance (Light/Dark/System)' },
       shortcutCloseModal: { ja: '開いているウィンドウを閉じる', en: 'Close the open window' },
       customizeSectionLabel: { ja: '🎨 表示のカスタマイズ', en: '🎨 Customization' },
       customizeIconLabel: { ja: 'ホーム画面アイコン', en: 'Home screen icon' },
@@ -1435,17 +1441,50 @@
   /* ================================================================
      ⚙️ 表示設定 - ダークモード: taipak5000.github.io 配下の各ツール共通
      'sky_app_theme' は sky_app_lang と同じく端末（ブラウザ）ごとの表示設定
-     なので、nsKey()は使わずプレーンなグローバルキーとして扱う。実際の適用は
-     <head>内のインラインscriptで既にページ読み込み時点で行われている
-     (フラッシュ・オブ・ライトモード防止のため)。ここではトグル操作用の関数を定義する。
+     なので、nsKey()は使わずプレーンなグローバルキーとして扱う。値は
+     'light' / 'dark' / 'system'（未設定含む＝OSの配色設定に追従）の3状態。
+     初回描画時の適用は<head>内のインラインscriptで既にページ読み込み時点で
+     行われている(フラッシュ・オブ・ライトモード防止のため)。ここではトグル操作用・
+     他タブ間同期用・OS配色のライブ変更用の関数を定義する。
      ================================================================ */
   var THEME_STORAGE_KEY = 'sky_app_theme';
+  // 保存値('light' / 'dark' / 'system' / 未設定)から、実際に画面へ適用すべき
+  // 実効テーマ('dark' / 'light')を解決する共有ヘルパー。'system'（または未設定）の
+  // 場合はOSの配色設定(prefers-color-scheme)に従う。<head>内のフラッシュ・オブ・
+  // ライトモード防止用script（他scriptより先に単独で動く必要があるためロジックを
+  // 複製している）以外は、トグル・他タブ間同期(storageイベント)・OS配色のライブ変更
+  // (prefers-color-schemeのchangeイベント)すべてがこのヘルパーを経由する。
+  function resolveEffectiveTheme(stored) {
+    if (stored === 'dark' || stored === 'light') return stored;
+    return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  }
+  // 保存されている表示モード('light'/'dark'/'system')を返す。未設定・不正な値は
+  // 'system'（＝OSに従う。ユーザーが一度もトグルを操作していない状態のデフォルト）扱いにする。
+  function getStoredThemeMode() {
+    try {
+      var v = localStorage.getItem(THEME_STORAGE_KEY);
+      return (v === 'dark' || v === 'light' || v === 'system') ? v : 'system';
+    } catch (e) { return 'system'; }
+  }
   function isDarkTheme() {
     return document.documentElement.getAttribute('data-theme') === 'dark';
   }
+  function themeModeLabelKey(mode) {
+    return mode === 'dark' ? 'settings.themeToggleToDark' : mode === 'light' ? 'settings.themeToggleToLight' : 'settings.themeToggleToSystem';
+  }
   function updateThemeToggleUI() {
     var btn = document.getElementById('settingsThemeToggleBtn');
-    if (btn) btn.textContent = isDarkTheme() ? t('settings.themeToggleToLight') : t('settings.themeToggleToDark');
+    if (!btn) return;
+    var mode = getStoredThemeMode();
+    var nextMode = mode === 'light' ? 'dark' : (mode === 'dark' ? 'system' : 'light');
+    // ボタンの表示文言は従来通り「クリックすると切り替わる先」を示す
+    btn.textContent = t(themeModeLabelKey(nextMode));
+    // aria-pressedは二値専用でこの3状態サイクルには適さないため使わず、
+    // 現在の状態と次にクリックした際の遷移先の両方をaria-labelで明示する
+    btn.setAttribute('aria-label', t('settings.themeToggleAria', {
+      current: t(themeModeLabelKey(mode)),
+      next: t(themeModeLabelKey(nextMode))
+    }));
   }
   function applyThemeToDOM(isDark) {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
@@ -1456,11 +1495,19 @@
     updateThemeToggleUI();
   }
   function toggleTheme() {
-    var next = !isDarkTheme();
-    try { localStorage.setItem(THEME_STORAGE_KEY, next ? 'dark' : 'light'); } catch (e) { /* noop */ }
-    applyThemeToDOM(next);
+    var mode = getStoredThemeMode();
+    var next = mode === 'light' ? 'dark' : (mode === 'dark' ? 'system' : 'light');
+    try { localStorage.setItem(THEME_STORAGE_KEY, next); } catch (e) { /* noop */ }
+    applyThemeToDOM(resolveEffectiveTheme(next) === 'dark');
   }
   window.toggleTheme = toggleTheme;
+  // OS側の配色設定が開いたタブの最中に変化した場合（例: 日没での自動切替）、
+  // 保存モードが'system'（＝未選択含む）のときだけ、その場でライブに反映する
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+      if (getStoredThemeMode() === 'system') applyThemeToDOM(resolveEffectiveTheme('system') === 'dark');
+    });
+  }
 
   // ═══ プロフィール（保存枠）管理: taipak5000.github.io 配下の各ツール共通 ═══
   var PROFILES_KEY = 'skyProfiles_v1';
@@ -1550,6 +1597,13 @@
   }
   window.addEventListener('storage', function (e) {
     if (e.key === PROFILES_KEY) pfApplyThemeColor(pfGetActiveProfile().color);
+    // 他のタブ/サイト（同一オリジンを共有するtaipak5000.github.io系ツール群）で
+    // sky_app_themeが変更された場合、このタブでもリロードなしに即座に反映する。
+    // 'light'/'dark'/'system'のいずれであっても resolveEffectiveTheme() で実効テーマに
+    // 解決してから適用する（e.newValueがnull＝キー削除の場合も'system'相当として扱われる）。
+    if (e.key === THEME_STORAGE_KEY) {
+      applyThemeToDOM(resolveEffectiveTheme(e.newValue) === 'dark');
+    }
     // 他のタブ/サイトで所持通貨（キャンドル等）が更新された場合、プロフィールモーダルを
     // 開いたままそのタブを見ていても、その場で表示が最新になるようにする
     if (e.key === nsKey('wishOwnCurrency')) {
@@ -3764,7 +3818,8 @@
   }
 
   // ═══ ⚙️ 表示設定のキーボードショートカット（?・D・Esc）: taipak5000.github.io 配下の各ツール共通 ═══
-  // '?'でこの設定を開く／'D'でダークモード切替／Escで開いているモーダル(またはサイドバー)を閉じる。
+  // '?'でこの設定を開く／'D'で外観モード切替(ライト→ダーク→システムの順で循環)／
+  // Escで開いているモーダル(またはサイドバー)を閉じる。
   // Escはショートカットのオン・オフ設定に関わらず常時有効（モーダルの基本UXのため）。
   function closeTopmostOpenModal() {
     // DOM上での出現順（= 同一z-indexでの重なり順）の後ろにあるものほど手前に表示されるため、
