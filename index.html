@@ -454,6 +454,16 @@
 
   .history-empty { font-size: 13px; color: var(--text-dim); padding: 4px 0; }
 
+  /* ═══ 履歴・推移グラフの「目標」絞り込み(2件以上の目標がある場合のみ表示) ═══ */
+  .history-goal-filter-row { display: flex; align-items: center; gap: 8px; margin: -4px 0 12px; }
+  .history-goal-filter-label { font-size: 12px; color: var(--text-dim); flex-shrink: 0; }
+  .history-goal-filter {
+    flex: 1; min-width: 0;
+    background: var(--cream); border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 10px; color: var(--text); font-size: 13px; font-family: inherit; outline: none;
+  }
+  .history-goal-filter:focus { border-color: var(--amber); }
+
   /* ═══ ミニ推移グラフ（獲得履歴からの所持本数の推移スパークライン） ═══ */
   .trend-chart-wrap { margin: 2px 0 16px; }
   .trend-chart-svg { width: 100%; height: 72px; display: block; overflow: visible; }
@@ -562,6 +572,13 @@
     border-radius: 8px; padding: 5px 9px; font-size: 13px; cursor: pointer;
   }
   .pf-icon-btn:hover { background: var(--cream-deep); }
+  .pf-icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pf-icon-btn:disabled:hover { background: var(--cream); }
+  /* ═══ 目標（複数目標）管理モーダル: 並べ替え・複製ボタン、目標ごとの残り本数/進捗の要約 ═══ */
+  .goal-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .goal-row-summary { font-size: 11px; color: var(--text-dim); }
+  .goal-row-summary.is-achieved { color: var(--green); }
+  .pf-move-btn { padding: 5px 7px; font-size: 11px; line-height: 1; }
   .pf-color-input { width: 28px; height: 28px; padding: 0; border: 1px solid var(--border); border-radius: 50%;
     background: none; cursor: pointer; flex-shrink: 0; overflow: hidden; }
   .pf-color-input::-webkit-color-swatch-wrapper { padding: 0; }
@@ -993,6 +1010,10 @@
 
   <section class="card">
     <h2 data-i18n="history.heading">📜 獲得履歴</h2>
+    <div class="history-goal-filter-row" id="historyGoalFilterRow" style="display:none;">
+      <label class="history-goal-filter-label" for="historyGoalFilter" data-i18n="history.filterLabel">🎯 表示する目標</label>
+      <select class="history-goal-filter" id="historyGoalFilter"></select>
+    </div>
     <div class="trend-chart-wrap" id="trendChartWrap"></div>
     <div class="history-list" id="historyList"></div>
     <div class="history-footer">
@@ -1244,7 +1265,15 @@
       modalTitle: { ja: '🗂️ 目標（複数目標管理）', en: '🗂️ Goals' },
       newNamePlaceholder: { ja: '新しい目標名', en: 'New goal name' },
       hint: { ja: '複数の目標を切り替えて管理できます。目標を切り替えると、目標本数・使用予定本数・目標日がその目標専用の内容に切り替わります(所持本数・集めペースはプロフィール共通です)。', en: "Switch between multiple goals. Switching a goal swaps its target amount, planned usage, and target date (current amount and collection pace stay shared across the whole profile)." },
-      deleteConfirmText: { ja: '「{name}」を削除しますか？この目標の目標設定も削除されます。', en: 'Delete "{name}"? This goal\'s target settings will also be deleted.' }
+      deleteConfirmText: { ja: '「{name}」を削除しますか？この目標の目標設定も削除されます。', en: 'Delete "{name}"? This goal\'s target settings will also be deleted.' },
+      moveUpBtnTitle: { ja: '上へ移動', en: 'Move up' },
+      moveDownBtnTitle: { ja: '下へ移動', en: 'Move down' },
+      duplicateBtnTitle: { ja: 'この目標を複製', en: 'Duplicate this goal' },
+      duplicateNameTemplate: { ja: '{name}のコピー', en: '{name} (Copy)' },
+      summaryNoTarget: { ja: '目標本数が未設定です', en: 'No target amount set' },
+      summaryAchieved: { ja: '🎉 達成済み', en: '🎉 Goal reached' },
+      summaryRemainingTemplate: { ja: '残り{remaining}本（{pct}%）', en: '{remaining} candles left ({pct}%)' },
+      summaryDaysTemplate: { ja: ' ・あと約{n}日', en: ' · about {n} days left' }
     },
     pace: {
       heading: { ja: '🕯️ 1日の集めペース', en: '🕯️ Daily Collection Pace' },
@@ -1288,6 +1317,9 @@
       note: { ja: '所持通貨からの反映・アンケート回答による増減を記録します(最大50件)。「取り消す」でその操作だけを元に戻せます。', en: 'Records increases and decreases from filling in from owned currency and survey answers (up to 50 entries). Use "Undo" to revert just that one action.' },
       clearBtn: { ja: '履歴を全て消去', en: 'Clear all history' },
       empty: { ja: 'まだ履歴はありません。所持通貨からの反映やアンケート回答ボタンで記録されます。', en: 'No history yet. It will be recorded when you use the Fill from Owned Currency or Survey Answered buttons.' },
+      emptyFiltered: { ja: 'この目標での履歴はまだありません。', en: 'No history yet for this goal.' },
+      filterLabel: { ja: '🎯 表示する目標', en: '🎯 Filter by goal' },
+      filterAllOption: { ja: 'すべての目標', en: 'All goals' },
       undoBtn: { ja: '取り消す', en: 'Undo' },
       amountTemplate: { ja: '{sign}{n}本', en: '{sign}{n} candles' },
       entryFillCurrent: { ja: '所持通貨から反映', en: 'Filled from owned currency' },
@@ -1614,9 +1646,16 @@
     pfSaveProfiles(remaining);
     try {
       var toRemove = [];
+      // バグ修正: indexOf()による部分一致だと、削除対象のidが別の(現存する)プロフィールの
+      // idの先頭部分と一致してしまう場合(例: id='abc' で別プロフィールが'abc123')に、
+      // そのプロフィールのキー('...__p_abc123')まで誤って削除対象に含めてしまっていた
+      // (通常のプロフィール作成では起きないが、バックアップの読み込みで細工された/他所からの
+      // データが混入した場合に起こりうる)。nsKey()が付与するのは常に末尾の'__p_'+idという
+      // 接尾辞のため、その接尾辞で「文字列全体として終わっているか」を厳密にチェックする。
+      var suffix = '__p_' + id;
       for (var k = 0; k < localStorage.length; k++) {
         var key = localStorage.key(k);
-        if (key && key.indexOf('__p_' + id) !== -1) toRemove.push(key);
+        if (key && key.length > suffix.length && key.slice(-suffix.length) === suffix) toRemove.push(key);
       }
       // バグ修正: nsKey()は既定プロフィール(DEFAULT_PROFILE_ID)の場合、'__p_'+id を
       // 付けない接尾辞なしの生のキー名をそのまま返す仕様のため、上のループ
@@ -1665,6 +1704,75 @@
     var dockLabel = document.getElementById('siteDockProfileLabel');
     if (dockLabel) dockLabel.textContent = pfDisplayName(active);
   }
+
+  /* ================================================================
+     ♿ モーダルのフォーカス管理（プロフィール・目標・ダッシュボード・バックアップ・
+     ホーム画面アイコンカスタマイズ・表示設定の計6つの .pf-modal-overlay 共通の
+     1実装）。それぞれの開く/閉じる関数(pfOpenModal/pfCloseModal等)から
+     mfOnModalOpen(overlayId)/mfOnModalClose(overlayId)を呼び出すだけで済む。
+     - 開く時: モーダル内の最初のフォーカス可能要素へフォーカスを移す
+       (無ければモーダルカード自体にtabindex="-1"を付けてフォーカスする)。
+     - 開いている間: Tab/Shift+Tabをそのモーダルの中だけに閉じ込め、背景の
+       ページ要素(まだ視覚的に隠れていないだけの、閉じているはずの要素)に
+       フォーカスが漏れないようにする。
+     - 閉じる時: 開く直前にフォーカスがあった要素(トリガー)へフォーカスを戻す。
+     dmModalOverlay(バックアップ)はpfModalOverlay(プロフィール)を閉じずに
+     その上に重ねて開かれることがあるため、「今開いている最前面のモーダル」は
+     単純な直近1件のフラグではなく、closeTopmostOpenModal()と同じ
+     DOM出現順(=同一z-indexでの重なり順)の優先度で判定する。
+     ================================================================ */
+  var MF_MODAL_STACK_ORDER = ['settingsModalOverlay', 'iconCustomModal', 'dmModalOverlay', 'dashModalOverlay', 'goalModalOverlay', 'pfModalOverlay'];
+  function mfTopmostOverlayEl() {
+    for (var i = 0; i < MF_MODAL_STACK_ORDER.length; i++) {
+      var el = document.getElementById(MF_MODAL_STACK_ORDER[i]);
+      if (el && el.classList.contains('is-visible')) return el;
+    }
+    return null;
+  }
+  function mfFocusableEls(container) {
+    var nodes = container.querySelectorAll(
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    return Array.prototype.filter.call(nodes, function (el) {
+      return el.offsetWidth > 0 || el.offsetHeight > 0 || el === document.activeElement;
+    });
+  }
+  var mfTriggerEls = {}; // overlayId -> モーダルを開く直前にフォーカスがあった要素
+  function mfOnModalOpen(overlayId) {
+    var overlay = document.getElementById(overlayId);
+    if (!overlay) return;
+    mfTriggerEls[overlayId] = document.activeElement;
+    var focusables = mfFocusableEls(overlay);
+    if (focusables.length) {
+      focusables[0].focus();
+    } else {
+      var card = overlay.querySelector('.pf-modal-card');
+      if (card) {
+        if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '-1');
+        card.focus();
+      }
+    }
+  }
+  function mfOnModalClose(overlayId) {
+    var trigger = mfTriggerEls[overlayId];
+    delete mfTriggerEls[overlayId];
+    if (trigger && typeof trigger.focus === 'function' && document.contains(trigger)) trigger.focus();
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab') return;
+    var overlay = mfTopmostOverlayEl();
+    if (!overlay) return;
+    var focusables = mfFocusableEls(overlay);
+    if (focusables.length === 0) { e.preventDefault(); return; }
+    var first = focusables[0];
+    var last = focusables[focusables.length - 1];
+    var outside = !overlay.contains(document.activeElement);
+    if (e.shiftKey) {
+      if (outside || document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (outside || document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
 
   /* ================================================================
      🗓️ ダッシュボード（今日・今週・今月）
@@ -1960,6 +2068,7 @@
   function pfDashOpen() {
     var overlay = document.getElementById('dashModalOverlay');
     if (overlay) overlay.classList.add('is-visible');
+    mfOnModalOpen('dashModalOverlay');
     var body = document.getElementById('dashBody');
     if (pfDashCache) { body.innerHTML = pfDashBuildHtml(pfDashCache); pfDashStartTimer(); return; }
     body.innerHTML = '<p class="pf-hint">' + t('dashboard.loading') + '</p>';
@@ -1976,6 +2085,7 @@
   function pfDashClose() {
     var overlay = document.getElementById('dashModalOverlay');
     if (overlay) overlay.classList.remove('is-visible');
+    mfOnModalClose('dashModalOverlay');
     pfDashStopTimer();
   }
 
@@ -2091,7 +2201,11 @@
       localStorage.setItem(nsKey('wishOwnCurrency'), JSON.stringify(wish));
     }
     return {
-      candle: wish.candle || 0,
+      // バグ修正: 「所持通貨から反映」ボタン(els.fillCurrentBtn)がこの値をそのまま
+      // 所持本数欄に入れるため、他ツール側の不具合などでwishOwnCurrency.candleに
+      // 負の値が保存されてしまっていた場合に備え、他の読み取り・書き込み箇所と同じく
+      // ここでも非負にクランプしておく(直接入力の値は既にMath.max(0, ...)でクランプ済み)。
+      candle: Math.max(0, wish.candle || 0),
       heart: wish.heart || 0,
       seasonCandle: companionData.ownedCandles || 0,
       ascendedCandle: wish.starCandle || 0,
@@ -2155,12 +2269,14 @@
     pfRenderCurrency();
     var overlay = document.getElementById('pfModalOverlay');
     if (overlay) overlay.classList.add('is-visible');
+    mfOnModalOpen('pfModalOverlay');
   }
   function pfCloseModal() {
     pfEditingId = null;
     pfDeletingId = null;
     var overlay = document.getElementById('pfModalOverlay');
     if (overlay) overlay.classList.remove('is-visible');
+    mfOnModalClose('pfModalOverlay');
   }
 
   // ═══ データのエクスポート/インポート/全削除 ═══
@@ -2174,10 +2290,12 @@
     dmRenderWipeArea();
     var overlay = document.getElementById('dmModalOverlay');
     if (overlay) overlay.classList.add('is-visible');
+    mfOnModalOpen('dmModalOverlay');
   }
   function dmCloseModal() {
     var overlay = document.getElementById('dmModalOverlay');
     if (overlay) overlay.classList.remove('is-visible');
+    mfOnModalClose('dmModalOverlay');
   }
 
   function dmExport() {
@@ -2313,10 +2431,12 @@
 
   function pfIconOpenModal() {
     document.getElementById('iconCustomModal').classList.add('is-visible');
+    mfOnModalOpen('iconCustomModal');
     closeSidebar();
   }
   function pfIconCloseModal() {
     document.getElementById('iconCustomModal').classList.remove('is-visible');
+    mfOnModalClose('iconCustomModal');
   }
 
   function pfIconSetMode(mode) {
@@ -2482,11 +2602,13 @@
     updateLangButtonsUI();
     var overlay = document.getElementById('settingsModalOverlay');
     if (overlay) overlay.classList.add('is-visible');
+    mfOnModalOpen('settingsModalOverlay');
     closeSidebar();
   }
   function settingsCloseModal() {
     var overlay = document.getElementById('settingsModalOverlay');
     if (overlay) overlay.classList.remove('is-visible');
+    mfOnModalClose('settingsModalOverlay');
   }
   function settingsGoToIconCustomize() {
     settingsCloseModal();
@@ -2666,6 +2788,10 @@
     bar.innerHTML = '<span class="goal-bar-text" tabindex="0" role="button" onclick="goalOpenModal()" ' +
       'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); goalOpenModal();}">🎯 <b>' + pfEscapeHtml(goalDisplayName(active)) + '</b>&nbsp;' + t('goalMulti.barActiveSuffix') + '</span>' +
       '<button type="button" class="pf-dash-btn" onclick="goalOpenModal()" title="' + t('goalMulti.manageBtnTitle') + '">🗂️</button>';
+    // 目標の追加・削除・並べ替えなど、目標一覧が変わりうる操作は最終的にすべて
+    // goalRenderBar()を呼ぶため、ここで履歴・推移グラフの「目標」絞り込みUI
+    // (historyGoalFilter)も合わせて最新化する。
+    if (typeof renderHistoryGoalFilter === 'function') renderHistoryGoalFilter();
   }
 
   // 名前変更中・削除確認中の目標ID(プロフィールモーダルと同じ、インライン確認方式)
@@ -2678,7 +2804,7 @@
     var data = goalEnsureInit();
     var activeId = data.activeGoalId;
     var html = '';
-    data.goals.forEach(function (g) {
+    data.goals.forEach(function (g, idx) {
       if (goalEditingId === g.id) {
         html += '<div class="pf-row" style="flex-wrap: wrap;">' +
           '<input type="text" class="pf-row-input" id="goalEditInput" value="' + pfEscapeHtml(g.name) + '" maxlength="20" ' +
@@ -2696,9 +2822,25 @@
           '</div>';
         return;
       }
+      var summary = goalComputeSummary(g);
+      var summaryHtml;
+      if (!summary.hasTarget) {
+        summaryHtml = t('goalMulti.summaryNoTarget');
+      } else if (summary.achieved) {
+        summaryHtml = t('goalMulti.summaryAchieved');
+      } else {
+        summaryHtml = t('goalMulti.summaryRemainingTemplate', { remaining: fmt(summary.remaining), pct: summary.pct }) +
+          (summary.days !== null ? t('goalMulti.summaryDaysTemplate', { n: summary.days }) : '');
+      }
       html += '<div class="pf-row' + (g.id === activeId ? ' active' : '') + '">' +
-        '<span class="pf-row-name" tabindex="0" role="button" onclick="goalSwitch(\'' + g.id + '\')" ' +
-        'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); goalSwitch(\'' + g.id + '\');}">' + (g.id === activeId ? '✅ ' : '') + pfEscapeHtml(goalDisplayName(g)) + '</span>' +
+        '<span class="goal-row-main">' +
+          '<span class="pf-row-name" tabindex="0" role="button" onclick="goalSwitch(\'' + g.id + '\')" ' +
+          'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); goalSwitch(\'' + g.id + '\');}">' + (g.id === activeId ? '✅ ' : '') + pfEscapeHtml(goalDisplayName(g)) + '</span>' +
+          '<span class="goal-row-summary' + (summary.achieved ? ' is-achieved' : '') + '">' + summaryHtml + '</span>' +
+        '</span>' +
+        '<button type="button" class="pf-icon-btn pf-move-btn" onclick="goalMoveGoal(\'' + g.id + '\', -1)" title="' + t('goalMulti.moveUpBtnTitle') + '"' + (idx === 0 ? ' disabled' : '') + '>▲</button>' +
+        '<button type="button" class="pf-icon-btn pf-move-btn" onclick="goalMoveGoal(\'' + g.id + '\', 1)" title="' + t('goalMulti.moveDownBtnTitle') + '"' + (idx === data.goals.length - 1 ? ' disabled' : '') + '>▼</button>' +
+        '<button type="button" class="pf-icon-btn" onclick="goalDuplicateGoal(\'' + g.id + '\')" title="' + t('goalMulti.duplicateBtnTitle') + '">⧉</button>' +
         '<button type="button" class="pf-icon-btn" onclick="goalStartRename(\'' + g.id + '\')">✏️</button>' +
         (data.goals.length > 1 ? '<button type="button" class="pf-icon-btn" onclick="goalStartDelete(\'' + g.id + '\')">🗑️</button>' : '') +
         '</div>';
@@ -2761,6 +2903,67 @@
     goalRenderModal();
     goalRenderBar();
   }
+
+  // 目標の並べ替え(direction: -1で1つ上へ・+1で1つ下へ)。並び順=data.goals配列の順序
+  // そのもので、goalRenderModal()・goalRenderBar()・目標切替モーダルでの表示順は
+  // すべてこの配列順に従う。
+  function goalMoveGoal(id, direction) {
+    var data = goalEnsureInit();
+    var idx = -1;
+    for (var i = 0; i < data.goals.length; i++) { if (data.goals[i].id === id) { idx = i; break; } }
+    if (idx === -1) return;
+    var newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= data.goals.length) return;
+    var tmp = data.goals[idx];
+    data.goals[idx] = data.goals[newIdx];
+    data.goals[newIdx] = tmp;
+    goalSaveData(data);
+    goalRenderModal();
+    goalRenderBar(); // 履歴・推移グラフの「目標」絞り込み(historyGoalFilter)の並び順も更新する
+  }
+
+  // 目標の複製: 目標本数・使用予定本数・目標日をそのまま引き継いだ新しい目標を、
+  // 複製元のすぐ後ろに追加する(名前だけ「のコピー」を付けて区別)。追加(goalAdd)とは
+  // 違いアクティブな目標の切り替え・モーダルを閉じることはせず、そのままモーダル内に
+  // とどまる(複数件まとめて複製・調整したい場合にも使いやすいように)。
+  function goalDuplicateGoal(id) {
+    var data = goalEnsureInit();
+    var idx = -1, src = null;
+    for (var i = 0; i < data.goals.length; i++) { if (data.goals[i].id === id) { idx = i; src = data.goals[i]; break; } }
+    if (!src) return;
+    var copy = {
+      id: goalGenId(),
+      name: t('goalMulti.duplicateNameTemplate', { name: goalDisplayName(src) }).slice(0, 20),
+      target: src.target,
+      plannedUsage: src.plannedUsage,
+      targetDate: src.targetDate
+    };
+    data.goals.splice(idx + 1, 0, copy);
+    goalSaveData(data);
+    goalRenderModal();
+    goalRenderBar(); // 履歴・推移グラフの「目標」絞り込み(historyGoalFilter)の選択肢にも複製後の目標を反映する
+  }
+
+  // 目標切替モーダルの一覧に添える要約(残り本数・進捗率・今のペースでの目安日数)。
+  // 所持本数(current)・集めペース(dailyRate/heartsToSend)はプロフィール共通のため、
+  // 「今アクティブな目標」に限らずどの目標の行でもこの共通の値を使って計算する
+  // (goalMulti.hintで案内している通り)。
+  function goalComputeSummary(g) {
+    var target = Math.max(0, parseFloat(g.target) || 0);
+    var plannedUsage = Math.max(0, parseFloat(g.plannedUsage) || 0);
+    var effectiveTarget = target + plannedUsage;
+    if (effectiveTarget <= 0) return { hasTarget: false };
+    var current = Math.max(0, parseFloat(els.current.value) || 0);
+    var remaining = effectiveTarget - current;
+    var pct = Math.min(100, Math.round((current / effectiveTarget) * 100));
+    if (remaining <= 0) return { hasTarget: true, achieved: true, pct: 100 };
+    var dailyRate = Math.max(0, Math.min(25, parseInt(els.dailyRate.value, 10) || 0));
+    var heartsToSend = Math.max(0, parseFloat(els.heartsToSend.value) || 0);
+    var totalDaily = dailyRate - heartsToSend * 3;
+    var days = totalDaily > 0 ? Math.ceil(remaining / totalDaily) : null;
+    return { hasTarget: true, achieved: false, remaining: remaining, pct: pct, days: days };
+  }
+
   function goalAdd() {
     var input = document.getElementById('goalNewGoalInput');
     var name = ((input && input.value) || '').trim();
@@ -2789,12 +2992,14 @@
     goalRenderModal();
     var overlay = document.getElementById('goalModalOverlay');
     if (overlay) overlay.classList.add('is-visible');
+    mfOnModalOpen('goalModalOverlay');
   }
   function goalCloseModal() {
     goalEditingId = null;
     goalDeletingId = null;
     var overlay = document.getElementById('goalModalOverlay');
     if (overlay) overlay.classList.remove('is-visible');
+    mfOnModalClose('goalModalOverlay');
   }
 
   window.goalOpenModal = goalOpenModal;
@@ -2806,6 +3011,8 @@
   window.goalCancelRowState = goalCancelRowState;
   window.goalConfirmRenameInline = goalConfirmRenameInline;
   window.goalConfirmDeleteInline = goalConfirmDeleteInline;
+  window.goalMoveGoal = goalMoveGoal;
+  window.goalDuplicateGoal = goalDuplicateGoal;
 
   // ═══ サイドバー開閉 ═══
   var sidebarEl = document.getElementById('sidebar');
@@ -2852,7 +3059,9 @@
     candleFill: document.getElementById('candleFill'),
     resultContent: document.getElementById('resultContent'),
     historyList: document.getElementById('historyList'),
-    historyClearBtn: document.getElementById('historyClearBtn')
+    historyClearBtn: document.getElementById('historyClearBtn'),
+    historyGoalFilterRow: document.getElementById('historyGoalFilterRow'),
+    historyGoalFilter: document.getElementById('historyGoalFilter')
   };
 
   // 入力内容をブラウザに保存する。localStorageが使えない環境(プライベートモード、
@@ -2911,6 +3120,47 @@
   function saveHistory(list) {
     try { window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(list)); } catch (err) { /* no-op */ }
   }
+
+  // ═══ 履歴の「目標」絞り込み ═══ 各履歴には記録時点でアクティブだった目標のidを
+  // goalIdとして残しておき(addHistoryEntry参照)、ここで選択中の目標idに一致する
+  // ものだけへ絞り込む。null/''のときは絞り込みなし(プロフィール全体)。
+  // ページ読み込みのたびにリセットされる一時的な表示状態で、保存はしない。
+  var historyGoalFilterId = null;
+  function loadFilteredHistory() {
+    var list = loadHistory();
+    if (!historyGoalFilterId) return list;
+    return list.filter(function (e) { return e.goalId === historyGoalFilterId; });
+  }
+  // 目標が2件以上ある場合のみ絞り込みUIを表示する。目標一覧が変わるたびに
+  // (goalRenderBar()から)呼ばれ、選択肢と選択状態を最新化する。
+  function renderHistoryGoalFilter() {
+    var row = els.historyGoalFilterRow;
+    var sel = els.historyGoalFilter;
+    if (!row || !sel) return;
+    var data = goalEnsureInit();
+    var beforeFilterId = historyGoalFilterId;
+    if (data.goals.length < 2) {
+      row.style.display = 'none';
+      historyGoalFilterId = null; // 目標が1件だけになったら絞り込みを解除する
+    } else {
+      row.style.display = '';
+      // 絞り込み中の目標が削除された場合は「すべて」に戻す
+      if (historyGoalFilterId && !data.goals.some(function (g) { return g.id === historyGoalFilterId; })) {
+        historyGoalFilterId = null;
+      }
+      sel.innerHTML = '<option value="">' + t('history.filterAllOption') + '</option>' +
+        data.goals.map(function (g) {
+          return '<option value="' + g.id + '">' + pfEscapeHtml(goalDisplayName(g)) + '</option>';
+        }).join('');
+      sel.value = historyGoalFilterId || '';
+    }
+    // 絞り込みが(目標の削除・1件化などで)ここで変わった場合は、履歴一覧・推移グラフを
+    // 古い絞り込み状態のまま残さないよう再描画する。
+    if (historyGoalFilterId !== beforeFilterId) {
+      renderHistory();
+      renderTrendChart();
+    }
+  }
   function historyTimeLabel(ms) {
     var parts = new Intl.DateTimeFormat('ja-JP', {
       timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
@@ -2919,6 +3169,11 @@
     parts.forEach(function (part) { map[part.type] = part.value; });
     return map.month + '/' + map.day + ' ' + map.hour + ':' + map.minute;
   }
+  // 履歴を記録した時点でアクティブだった目標のidを返す(目標ごとの履歴絞り込みに使用)。
+  // 万一目標データが読めない場合でも履歴の記録自体は止めたくないため、失敗時はnullにする。
+  function historyActiveGoalId() {
+    try { return goalEnsureInit().activeGoalId || null; } catch (e) { return null; }
+  }
   function addHistoryEntry(labelKey, amount) {
     if (!amount) return;
     var list = loadHistory();
@@ -2926,18 +3181,25 @@
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
       time: Date.now(),
       labelKey: labelKey, // 表示のたびにt()で現在の言語へ変換する（保存するのはキーのみ）
-      amount: amount // 符号付き(増加はプラス、減少はマイナス)
+      amount: amount, // 符号付き(増加はプラス、減少はマイナス)
+      goalId: historyActiveGoalId() // 記録時点でアクティブだった目標(「目標」絞り込み用)
     });
     if (list.length > HISTORY_MAX_ENTRIES) list = list.slice(0, HISTORY_MAX_ENTRIES);
     saveHistory(list);
     renderHistory();
     renderPaceSuggestion();
+    // バグ修正: このaddHistoryEntry()自体がrenderTrendChart()を呼んでいなかったため、
+    // 各クイックアクションボタン(所持通貨から反映・アンケート回答・今日の分・手動確定)は
+    // 直前に呼んでいるupdate()内のrenderTrendChart()が「まだこの履歴が追加される前」の
+    // 状態を描画してしまい、グラフだけ古い/矛盾した形のまま残っていた。ここで確実に
+    // 最新の履歴を反映して再描画する。
+    renderTrendChart();
   }
   function renderHistory() {
-    var list = loadHistory();
+    var list = loadFilteredHistory();
     var html;
     if (list.length === 0) {
-      html = '<p class="history-empty">' + t('history.empty') + '</p>';
+      html = '<p class="history-empty">' + t(historyGoalFilterId ? 'history.emptyFiltered' : 'history.empty') + '</p>';
     } else {
       html = list.map(function (entry) {
         var isPlus = entry.amount >= 0;
@@ -2958,7 +3220,23 @@
   // ═══ 📈 ミニ推移グラフ(獲得履歴からの所持本数の推移スパークライン) ═══
   // 履歴には各操作の「差分」しか記録されていないため、現在の所持本数(現在値)から
   // 新しい順に差分を差し引いて遡ることで、各時点の所持本数を逆算して求める。
+  //
+  // ただし特定の目標に絞り込んでいる場合(historyGoalFilterId)は、所持本数自体は
+  // どの目標にも共通のため、その目標の履歴だけを遡っても「実際の所持本数」には
+  // ならない。代わりに、その目標がアクティブだった間に記録された差分だけを
+  // 古い方から0を起点に積み上げた「その目標での累積増減」を描画する。
   function computeTrendPoints() {
+    if (historyGoalFilterId) {
+      var filteredChrono = loadFilteredHistory().slice().reverse(); // 古い順
+      var points2 = [];
+      var running2 = 0;
+      if (filteredChrono.length > 0) points2.push({ time: filteredChrono[0].time - 1, value: 0 });
+      for (var j = 0; j < filteredChrono.length; j++) {
+        running2 += (filteredChrono[j].amount || 0);
+        points2.push({ time: filteredChrono[j].time, value: Math.max(0, running2) });
+      }
+      return points2;
+    }
     var list = loadHistory(); // 新しい順
     var currentVal = Math.max(0, parseFloat(els.current.value) || 0);
     var points = [];
@@ -2987,8 +3265,20 @@
     // 逆算(update()内のeffectiveTarget)と同じく使用予定本数(plannedUsage)を
     // 上乗せした「実質的な目標」を反映する。そうしないと使用予定本数がある場合に、
     // 実際にはまだ目標未達なのに、グラフ上では目標ラインに到達済みのように見えてしまう。
-    var target = Math.max(0, parseFloat(els.target.value) || 0);
-    var plannedUsage = Math.max(0, parseFloat(els.plannedUsage.value) || 0);
+    // 特定の目標に絞り込んでいる場合は、今アクティブな目標のels.target/plannedUsageでは
+    // なく、絞り込み対象そのものの目標本数・使用予定本数を使う(別の目標を見ている間は
+    // その目標自身の目標ラインを表示するため)。
+    var target, plannedUsage;
+    if (historyGoalFilterId) {
+      var filterGoal = null;
+      var filterGoals = goalEnsureInit().goals;
+      for (var fi = 0; fi < filterGoals.length; fi++) { if (filterGoals[fi].id === historyGoalFilterId) { filterGoal = filterGoals[fi]; break; } }
+      target = filterGoal ? Math.max(0, parseFloat(filterGoal.target) || 0) : 0;
+      plannedUsage = filterGoal ? Math.max(0, parseFloat(filterGoal.plannedUsage) || 0) : 0;
+    } else {
+      target = Math.max(0, parseFloat(els.target.value) || 0);
+      plannedUsage = Math.max(0, parseFloat(els.plannedUsage.value) || 0);
+    }
     var effectiveTarget = target + plannedUsage;
     var W = 300, H = 84, padX = 4, padY = 10;
     var minT = points[0].time;
@@ -3082,6 +3372,13 @@
     renderHistory();
     renderPaceSuggestion();
   });
+  if (els.historyGoalFilter) {
+    els.historyGoalFilter.addEventListener('change', function () {
+      historyGoalFilterId = els.historyGoalFilter.value || null;
+      renderHistory();
+      renderTrendChart();
+    });
+  }
 
   function update() {
     var target = Math.max(0, parseFloat(els.target.value) || 0);
@@ -3256,10 +3553,14 @@
     clearCurrentCommitTimer();
     var before = Math.max(0, parseFloat(els.current.value) || 0);
     var c = pfLoadCurrency();
-    els.current.value = c.candle;
+    // バグ修正: pfLoadCurrency()側で既に非負へクランプ済みだが、直接入力欄への
+    // 反映(フィールドの値)と履歴への差分記録の両方で、他の箇所と同じ
+    // Math.max(0, ...)ガードをここでも明示的にかけておく(二重の安全策)。
+    var newVal = Math.max(0, c.candle);
+    els.current.value = newVal;
     update();
     saveState();
-    addHistoryEntry('history.entryFillCurrent', c.candle - before);
+    addHistoryEntry('history.entryFillCurrent', newVal - before);
     syncCommittedCurrent();
   });
 
