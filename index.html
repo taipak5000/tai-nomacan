@@ -458,6 +458,36 @@
 
   .history-empty { font-size: 13px; color: var(--text-dim); padding: 4px 0; }
 
+  /* ═══ 🔥 連続記録日数(ストリーク) ═══ */
+  .streak-strip {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    margin: -4px 0 14px; padding: 9px 12px; border-radius: 10px;
+    background: var(--cream); border: 1px solid var(--border);
+    font-size: 12.5px; color: var(--text-dim);
+  }
+  .streak-strip .streak-main { font-weight: 700; color: var(--amber-deep); }
+  .streak-strip.is-empty { color: var(--text-dim); }
+
+  /* ═══ 🏆 称号(実績) ═══ */
+  .titles-card { display: none; }
+  .titles-card.has-titles { display: block; }
+  .titles-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .title-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 12px; border-radius: 999px;
+    background: var(--cream); border: 1px solid var(--border);
+    color: var(--amber-deep); font-size: 12.5px; font-weight: 700; white-space: nowrap; cursor: default;
+  }
+
+  .noma-toast {
+    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(58,46,34,0.94); color: #fff; padding: 10px 18px; border-radius: 999px;
+    font-size: 13px; font-weight: 500; opacity: 0; transition: opacity .2s, transform .2s;
+    z-index: 500; pointer-events: none; max-width: 90vw; text-align: center;
+  }
+  .noma-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
   /* ═══ 履歴・推移グラフの「目標」絞り込み(2件以上の目標がある場合のみ表示) ═══ */
   .history-goal-filter-row { display: flex; align-items: center; gap: 8px; margin: -4px 0 12px; }
   .history-goal-filter-label { font-size: 12px; color: var(--text-dim); flex-shrink: 0; }
@@ -1012,8 +1042,14 @@
     <div id="resultContent"></div>
   </section>
 
+  <section class="card titles-card" id="titlesPanel">
+    <h2 data-i18n="titles.heading">🏆 称号</h2>
+    <div class="titles-chips" id="titlesChips"></div>
+  </section>
+
   <section class="card">
     <h2 data-i18n="history.heading">📜 獲得履歴</h2>
+    <div class="streak-strip" id="streakStrip"></div>
     <div class="history-goal-filter-row" id="historyGoalFilterRow" style="display:none;">
       <label class="history-goal-filter-label" for="historyGoalFilter" data-i18n="history.filterLabel">🎯 表示する目標</label>
       <select class="history-goal-filter" id="historyGoalFilter"></select>
@@ -1034,6 +1070,8 @@
     <span data-i18n="footer.creditLabel">作成・ご意見:</span> <a href="https://x.com/Skyzztai" target="_blank" rel="noopener noreferrer">@Skyzztai</a>　／　<a href="https://odaibako.net/u/Skyzztai" target="_blank" rel="noopener noreferrer" data-i18n="footer.requestForm">リクエストフォーム</a><br>
     <a href="https://taipak5000.github.io/tai-info/" target="_blank" rel="noopener noreferrer" data-i18n="footer.infoLink">⚙️ 設定・更新情報・クレジット・プライバシーポリシー</a>
   </footer>
+
+  <div class="noma-toast" id="nomaToast" role="status" aria-live="polite"></div>
 
   <!-- ▸ サイトドック（画面下部固定クイックメニュー）: ハンバーガーサイドバーとは別の、
        よく使う4機能へのショートカット行。サイドバー自体の開閉やリンク一覧はそのまま。
@@ -1336,6 +1374,15 @@
       trendEmpty: { ja: 'まだ十分な履歴がないため、グラフは表示できません。', en: 'Not enough history yet to show a chart.' },
       trendTargetLabel: { ja: '🎯 目標', en: '🎯 Target' },
       trendAriaLabel: { ja: '所持本数の推移グラフ', en: 'Chart of your candle amount over time' }
+    },
+    streak: {
+      activeTemplate: { ja: '🔥 連続{n}日目の記録中', en: '🔥 Day {n} of your streak' },
+      bestSuffixTemplate: { ja: '（最長 {n}日）', en: ' (Best: {n} days)' },
+      emptyText: { ja: '📅 記録するとストリークが貯まります。今日の分を記録してみましょう。', en: '📅 Start recording to build a streak — try logging today\'s collection.' }
+    },
+    titles: {
+      heading: { ja: '🏆 称号', en: '🏆 Titles' },
+      unlockedToastTemplate: { ja: '🏆 称号「{icon} {name}」を獲得しました！', en: '🏆 Title unlocked: {icon} {name}!' }
     }
   };
 
@@ -1428,6 +1475,8 @@
     if (goalOverlay && goalOverlay.classList.contains('is-visible') && typeof goalRenderModal === 'function') goalRenderModal();
     if (typeof renderPaceSuggestion === 'function') renderPaceSuggestion();
     if (typeof renderDateQuickPresets === 'function') renderDateQuickPresets();
+    if (typeof renderStreak === 'function') renderStreak();
+    if (typeof renderTitles === 'function') renderTitles();
     updateLangButtonsUI();
   }
   // 従来の2言語トグル(既存のヘッダーの言語切替ボタン等から利用)。setLang()を使って実装。
@@ -3248,6 +3297,11 @@
     // 状態を描画してしまい、グラフだけ古い/矛盾した形のまま残っていた。ここで確実に
     // 最新の履歴を反映して再描画する。
     renderTrendChart();
+    // 🔥 「記録」に相当する操作(所持通貨から反映・アンケート回答・今日の分・手動確定/取消操作は
+    // 別経路なのでここには来ない)のたびに、今日をストリークとして記録し称号判定も行う。
+    streakRecordToday();
+    renderStreak();
+    if (typeof refreshTitlesUI === 'function') refreshTitlesUI();
   }
   function renderHistory() {
     var list = loadFilteredHistory();
@@ -3361,6 +3415,185 @@
         '<circle cx="' + xOf(last.time).toFixed(1) + '" cy="' + yOf(last.value).toFixed(1) + '" r="3" fill="var(--amber-deep)" />' +
       '</svg>';
   }
+
+  /* ================================================================
+     🔥 連続記録日数(ストリーク)
+     獲得履歴(HISTORY_STORAGE_KEY)は最大50件で古いものから消えていくため、
+     「これまでの最長ストリーク」を正しく保持し続けられない。そのため専用の
+     軽量な日付ログ(STREAK_KEY)を別途持ち、addHistoryEntry()のたびに「今日」を
+     記録する。longestは一度伸びたら二度と縮まないハイウォーターマーク
+     (Math.max()でのみ更新)。プロフィールごとに進捗が別なのでnsKey()で分離する。
+     ================================================================ */
+  function streakKey() { return nsKey('skyNomacanStreak_v1'); } // { days:{'YYYY-MM-DD':1,...}, longest:number }
+  function loadStreak() {
+    try {
+      var d = JSON.parse(localStorage.getItem(streakKey()));
+      if (d && typeof d === 'object') return { days: d.days || {}, longest: d.longest || 0 };
+    } catch (e) { /* 破損データは初期状態として扱う */ }
+    return { days: {}, longest: 0 };
+  }
+  function saveStreak(s) {
+    try { localStorage.setItem(streakKey(), JSON.stringify(s)); } catch (e) { /* noop */ }
+  }
+  function streakDateStr(d) {
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+  function streakAddDays(dateStr, delta) {
+    var p = dateStr.split('-');
+    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    d.setDate(d.getDate() + delta);
+    return streakDateStr(d);
+  }
+  // dateStrを終点とした連続記録日数を数える(dateStr自体が未記録なら0)
+  function streakRunEndingAt(days, dateStr) {
+    if (!days[dateStr]) return 0;
+    var n = 0, cur = dateStr;
+    while (days[cur]) { n++; cur = streakAddDays(cur, -1); }
+    return n;
+  }
+  // addHistoryEntry()から呼ばれる。今日をまだ記録していなければ記録し、
+  // 最長ストリーク(longest)をMath.max()でのみ更新する(後から縮まない)。
+  function streakRecordToday() {
+    var s = loadStreak();
+    var today = streakDateStr(new Date());
+    if (!s.days[today]) {
+      s.days[today] = 1;
+      s.longest = Math.max(s.longest, streakRunEndingAt(s.days, today));
+      saveStreak(s);
+    }
+    return s;
+  }
+  // 表示用の「今つながっている」ストリーク。最終記録日が今日か昨日なら継続中とみなし、
+  // それより前で途切れていれば0(=表示上は途切れている)を返す。
+  function streakCurrentLive(s) {
+    var today = streakDateStr(new Date());
+    if (s.days[today]) return streakRunEndingAt(s.days, today);
+    var yesterday = streakAddDays(today, -1);
+    if (s.days[yesterday]) return streakRunEndingAt(s.days, yesterday);
+    return 0;
+  }
+  function renderStreak() {
+    var el = document.getElementById('streakStrip');
+    if (!el) return;
+    var s = loadStreak();
+    var live = streakCurrentLive(s);
+    var bestSuffix = s.longest > 0 ? t('streak.bestSuffixTemplate', { n: s.longest }) : '';
+    if (live > 0) {
+      el.classList.remove('is-empty');
+      el.innerHTML = '<span class="streak-main">' + t('streak.activeTemplate', { n: live }) + '</span>' +
+        (s.longest > live ? '<span>' + bestSuffix + '</span>' : '');
+    } else {
+      el.classList.add('is-empty');
+      el.innerHTML = '<span>' + t('streak.emptyText') + '</span>' + (s.longest > 0 ? '<span>' + bestSuffix + '</span>' : '');
+    }
+  }
+
+  /* ================================================================
+     🏆 称号(実績)
+     ストリークの最長記録(streak.longest、上ですでにHWM化済み)と、所持本数の
+     過去最高値(currentMax、ここでMath.max()により保持)の2軸で判定する。
+     所持本数(els.current)はユーザーが直接減らせる/使う予定で差し引かれる値
+     ではあるが、直接入力欄の値そのものではなく「これまでの最高到達値」を
+     hwm.currentMaxとして別に持ち、そちらだけを条件に使うことで、後から
+     所持本数が減っても一度解禁した称号は取り消されない。
+     ================================================================ */
+  var TITLES = [
+    { id: 'streak3', icon: '🔥', name: { ja: '灯し始め', en: 'Spark of a Streak' },
+      desc: { ja: '3日連続で記録', en: 'Recorded 3 days in a row' },
+      condition: function (stats) { return stats.longestStreak >= 3; } },
+    { id: 'streak7', icon: '🕯️', name: { ja: '一週間の灯火', en: "A Week's Flame" },
+      desc: { ja: '7日連続で記録', en: 'Recorded 7 days in a row' },
+      condition: function (stats) { return stats.longestStreak >= 7; } },
+    { id: 'streak30', icon: '🌟', name: { ja: '絶やさぬ灯', en: 'Unwavering Flame' },
+      desc: { ja: '30日連続で記録', en: 'Recorded 30 days in a row' },
+      condition: function (stats) { return stats.longestStreak >= 30; } },
+    { id: 'hold100', icon: '🕯️', name: { ja: '灯の蓄え', en: 'Candle Stockpile' },
+      desc: { ja: '所持本数が100本に到達', en: 'Reached 100 candles held' },
+      condition: function (stats) { return stats.currentMax >= 100; } },
+    { id: 'hold300', icon: '🏮', name: { ja: '光の貯蔵庫', en: 'Vault of Light' },
+      desc: { ja: '所持本数が300本に到達', en: 'Reached 300 candles held' },
+      condition: function (stats) { return stats.currentMax >= 300; } },
+    { id: 'hold600', icon: '👑', name: { ja: '灯火の富豪', en: 'Candle Baron' },
+      desc: { ja: '所持本数が600本に到達', en: 'Reached 600 candles held' },
+      condition: function (stats) { return stats.currentMax >= 600; } }
+  ];
+  function titlesKey() { return nsKey('skyNomacanTitles_v1'); } // { earned:{<id>:ISO日時}, hwm:{ currentMax:number } }
+  function loadTitleStore() {
+    try {
+      var d = JSON.parse(localStorage.getItem(titlesKey()));
+      if (d && typeof d === 'object') {
+        return { earned: d.earned || {}, hwm: { currentMax: (d.hwm && d.hwm.currentMax) || 0 } };
+      }
+    } catch (e) { /* 破損データは初期状態として扱う */ }
+    return { earned: {}, hwm: { currentMax: 0 } };
+  }
+  function saveTitleStore(store) {
+    try { localStorage.setItem(titlesKey(), JSON.stringify(store)); } catch (e) { /* noop */ }
+  }
+  // 現在値からhwmを更新し、新規解禁分の称号一覧を返す(判定・保存・パネル再描画まで行う)
+  function checkAndUnlockTitles() {
+    var store = loadTitleStore();
+    var current = Math.max(0, parseFloat(els.current.value) || 0);
+    store.hwm.currentMax = Math.max(store.hwm.currentMax, current);
+    var stats = { currentMax: store.hwm.currentMax, longestStreak: loadStreak().longest };
+
+    var newlyEarned = [];
+    TITLES.forEach(function (ti) {
+      if (store.earned[ti.id]) return; // 既に獲得済みなら再評価しない(=取り消しは起きない)
+      if (ti.condition(stats)) {
+        store.earned[ti.id] = new Date().toISOString();
+        newlyEarned.push(ti);
+      }
+    });
+    saveTitleStore(store);
+    renderTitles(store);
+    return newlyEarned;
+  }
+  function renderTitles(store) {
+    store = store || loadTitleStore();
+    var panel = document.getElementById('titlesPanel');
+    var chips = document.getElementById('titlesChips');
+    if (!panel || !chips) return;
+    var earned = TITLES.filter(function (ti) { return store.earned[ti.id]; });
+    panel.classList.toggle('has-titles', earned.length > 0);
+    chips.innerHTML = earned.map(function (ti) {
+      return '<span class="title-chip" title="' + pfEscapeHtml(L(ti.desc)) + '">' + ti.icon + ' ' + pfEscapeHtml(L(ti.name)) + '</span>';
+    }).join('');
+  }
+  // 判定→保存→新規解禁分のトースト通知→パネル再描画までまとめて行う。
+  // addHistoryEntry()末尾(=「記録」に相当する操作の直後)と、ページ読み込み時に呼ぶ。
+  // 一度の操作で複数の称号が同時に解禁されることがある(例:ストリーク3日と7日を
+  // 同時に跨いだ場合)ため、トーストは1件ずつキューに積んで順番に表示する
+  // (即座に全件呼ぶと後の呼び出しが前の表示を上書きしてしまい、最後の1件しか見えない)。
+  function refreshTitlesUI() {
+    var newlyEarned = checkAndUnlockTitles();
+    newlyEarned.forEach(function (ti) {
+      queueNomaToast(t('titles.unlockedToastTemplate', { icon: ti.icon, name: L(ti.name) }));
+    });
+  }
+
+  var nomaToastQueue = [];
+  var nomaToastTimer = null;
+  var nomaToastBusy = false;
+  function queueNomaToast(msg) {
+    nomaToastQueue.push(msg);
+    if (!nomaToastBusy) advanceNomaToastQueue();
+  }
+  function advanceNomaToastQueue() {
+    var el = document.getElementById('nomaToast');
+    if (!el || nomaToastQueue.length === 0) { nomaToastBusy = false; return; }
+    nomaToastBusy = true;
+    var msg = nomaToastQueue.shift();
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(nomaToastTimer);
+    nomaToastTimer = setTimeout(function () {
+      el.classList.remove('show');
+      setTimeout(advanceNomaToastQueue, 200); // フェードアウトの間をおいてから次を表示
+    }, 2600);
+  }
+  // 単発表示用(既存呼び出し互換)。複数件をまとめて出したい場合はqueueNomaToast()を使う。
+  function showNomaToast(msg) { queueNomaToast(msg); }
 
   // ═══ 📊 獲得履歴から算出する「実際の平均ペース」の提案(スライダーは手動調整のまま残す) ═══
   // 直近14日以内の履歴があればそれを、無ければ全履歴の期間を使って
@@ -3867,6 +4100,8 @@
   renderHistory();
   renderPaceSuggestion();
   initDateQuickPresets();
+  renderStreak();
+  refreshTitlesUI(); // 既存ユーザーの所持本数がすでに閾値を超えている場合の追いつき判定も兼ねる
 })();
 </script>
 </body>
