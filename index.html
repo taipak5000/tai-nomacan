@@ -469,15 +469,19 @@
   .streak-strip.is-empty { color: var(--text-dim); }
 
   /* ═══ 🏆 称号(実績) ═══ */
-  .titles-card { display: none; }
-  .titles-card.has-titles { display: block; }
   .titles-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  /* .card h2のKaisei Decol/16.5px/amber-deepをそのまま引き継ぐと見出しみたいに大きく浮いてしまうため、
+     バッジらしい小さめの本文フォントへ明示的に上書きする */
+  .titles-count { font-family: 'Zen Maru Gothic', sans-serif; font-size: 12px; font-weight: 700; color: var(--text-dim); }
   .title-chip {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 6px 12px; border-radius: 999px;
     background: var(--cream); border: 1px solid var(--border);
     color: var(--amber-deep); font-size: 12.5px; font-weight: 700; white-space: nowrap; cursor: default;
   }
+  /* 未解除:名前・条件とも伏せ、🔒表示のみ。.fill-current-btn:disabled等の既存の無効状態と同じく
+     text-dim+低opacityで「まだ手が届いていない」印象を表す */
+  .title-chip.locked { color: var(--text-dim); opacity: 0.55; }
 
   .noma-toast {
     position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom));
@@ -1043,7 +1047,10 @@
   </section>
 
   <section class="card titles-card" id="titlesPanel">
-    <h2 data-i18n="titles.heading">🏆 称号</h2>
+    <h2 style="justify-content:space-between;">
+      <span data-i18n="titles.heading">🏆 称号</span>
+      <span class="titles-count" id="titlesCount">0 / 0</span>
+    </h2>
     <div class="titles-chips" id="titlesChips"></div>
   </section>
 
@@ -1382,7 +1389,10 @@
     },
     titles: {
       heading: { ja: '🏆 称号', en: '🏆 Titles' },
-      unlockedToastTemplate: { ja: '🏆 称号「{icon} {name}」を獲得しました！', en: '🏆 Title unlocked: {icon} {name}!' }
+      countTemplate: { ja: '{earned} / {total} 個解除', en: '{earned} / {total} unlocked' },
+      unlockedToastTemplate: { ja: '🏆 称号「{icon} {name}」を獲得しました！', en: '🏆 Title unlocked: {icon} {name}!' },
+      lockedName: { ja: '？？？', en: '？？？' },
+      lockedHint: { ja: '称号は条件を満たすと明らかになります', en: 'Unlocks when you meet its condition' }
     }
   };
 
@@ -3553,11 +3563,17 @@
     store = store || loadTitleStore();
     var panel = document.getElementById('titlesPanel');
     var chips = document.getElementById('titlesChips');
+    var countEl = document.getElementById('titlesCount');
     if (!panel || !chips) return;
-    var earned = TITLES.filter(function (ti) { return store.earned[ti.id]; });
-    panel.classList.toggle('has-titles', earned.length > 0);
-    chips.innerHTML = earned.map(function (ti) {
-      return '<span class="title-chip" title="' + pfEscapeHtml(L(ti.desc)) + '">' + ti.icon + ' ' + pfEscapeHtml(L(ti.name)) + '</span>';
+    var earnedCount = TITLES.filter(function (ti) { return store.earned[ti.id]; }).length;
+    if (countEl) countEl.textContent = t('titles.countTemplate', { earned: earnedCount, total: TITLES.length });
+    // 未獲得も含め全件を常に描画する。未獲得は名前・条件文を伏せ、汎用の🔒表示＋汎用ツールチップ
+    // のみ出す(hoverしても実際の名称・解除条件が漏れないようにするため)
+    chips.innerHTML = TITLES.map(function (ti) {
+      if (store.earned[ti.id]) {
+        return '<span class="title-chip" title="' + pfEscapeHtml(L(ti.desc)) + '">' + ti.icon + ' ' + pfEscapeHtml(L(ti.name)) + '</span>';
+      }
+      return '<span class="title-chip locked" title="' + pfEscapeHtml(t('titles.lockedHint')) + '">🔒 ' + pfEscapeHtml(t('titles.lockedName')) + '</span>';
     }).join('');
   }
   // 判定→保存→新規解禁分のトースト通知→パネル再描画までまとめて行う。
