@@ -2256,8 +2256,8 @@
      taipak5000.github.io 配下のツール群は同一originでlocalStorageを共有しているため、
      このサイトの称号(TITLES/skyNomacanTitles_v1)に加えて、他ツールで獲得した称号も
      ここから直接localStorageを読んで一覧できる。各ツールの保存キー・名前空間化ルール・
-     称号ID→アイコン/名前/条件文の対応表は、称号カタログの一次情報を持つ側(tai-card)の
-     定義を、このファイルの書式(TITLES同様、条件文は{ja, en}でL()に通す)に合わせて複製した
+     称号ID→アイコン/名前/条件文の対応表は、各ツール自身が持つTITLES定義を
+     このファイルの書式(TITLES同様、条件文は{ja, en}でL()に通す)に合わせて複製した
      もの。ランタイムを共有しているわけではないため、あちら側の定義が増える／変わった場合は
      ここも手動で追従させる必要がある。
      称号名・ツール名(source)は上流でも英訳が用意されていない固有名詞のため、
@@ -2272,7 +2272,12 @@
         rate75: { icon: '✨', name: '煌めきの探究者', desc: { ja: '全アイテムの所持率が75%に到達', en: 'Reached 75% overall ownership' } },
         rate100: { icon: '👑', name: '光の守護者', desc: { ja: '登録した全アイテムを100%所持', en: 'Reached 100% overall ownership' } },
         catmaster1: { icon: '🏅', name: 'コレクションの第一歩', desc: { ja: 'いずれか1カテゴリを100%達成', en: 'Completed at least 1 category' } },
-        catmaster6: { icon: '🏆', name: '熟練コレクター', desc: { ja: '6カテゴリ以上を100%達成', en: 'Completed 6 or more categories' } }
+        catmaster6: { icon: '🏆', name: '熟練コレクター', desc: { ja: '6カテゴリ以上を100%達成', en: 'Completed 6 or more categories' } },
+        spend1k: { icon: '💴', name: '灯火の支援者', desc: { ja: '実額の合計が¥1,000に到達', en: 'Real-money total reached ¥1,000' } },
+        spend5k: { icon: '🎁', name: '季節の後援者', desc: { ja: '実額の合計が¥5,000に到達', en: 'Real-money total reached ¥5,000' } },
+        spend15k: { icon: '💎', name: '彩りの後援者', desc: { ja: '実額の合計が¥15,000に到達', en: 'Real-money total reached ¥15,000' } },
+        spend30k: { icon: '🌌', name: '星空の大後援者', desc: { ja: '実額の合計が¥30,000に到達', en: 'Real-money total reached ¥30,000' } },
+        spend50k: { icon: '🌟', name: '光の大後援者', desc: { ja: '実額の合計が¥50,000に到達', en: 'Real-money total reached ¥50,000' } }
       } },
     emote: { storageKey: 'emoteTitles_v1', namespaced: true, source: 'エモート所持率管理',
       extract: function (d) { return Object.keys(d || {}); },
