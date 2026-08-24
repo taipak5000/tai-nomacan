@@ -260,7 +260,8 @@
     margin-top: 10px; padding: 9px 11px;
     background: var(--cream); border: 1px dashed var(--border); border-radius: 10px;
   }
-  .pace-suggest-text { font-size: 12px; color: var(--text-dim); flex: 1; min-width: 140px; }
+  .pace-suggest-texts { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
+  .pace-suggest-text { font-size: 12px; color: var(--text-dim); }
   .pace-suggest-text b { color: var(--amber-deep); }
 
   .date-picker { position: relative; }
@@ -468,6 +469,26 @@
   .streak-strip .streak-main { font-weight: 700; color: var(--amber-deep); }
   .streak-strip.is-empty { color: var(--text-dim); }
 
+  /* ═══ 📅 連続記録カレンダーヒートマップ(GitHubの草グラフ風。ストリーク専用ログ
+     skyNomacanStreak_v1のdays{'YYYY-MM-DD':1}をそのまま可視化する) ═══
+     週数(列数)は可変のため、幅が入りきらない場合は横スクロールで見られるようにする
+     (history-listの縦スクロールと同じ考え方で、::-webkit-scrollbarも同様に細く装飾)。 */
+  .streak-heatmap-wrap { margin: -2px 0 14px; }
+  .heatmap-label { font-size: 11.5px; color: var(--text-dim); margin: 0 0 6px; }
+  .heatmap-scroll { overflow-x: auto; padding-bottom: 4px; }
+  .heatmap-scroll::-webkit-scrollbar { height: 5px; }
+  .heatmap-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .heatmap-months { --hm-cell: 11px; display: grid; grid-auto-rows: 13px; column-gap: 3px; margin-bottom: 2px; }
+  .heatmap-month-label { font-size: 9.5px; color: var(--text-dim); white-space: nowrap; align-self: end; }
+  .heatmap-grid { --hm-cell: 11px; display: grid; gap: 3px; width: max-content; }
+  .heatmap-cell { width: var(--hm-cell); height: var(--hm-cell); border-radius: 3px; background: var(--border); }
+  .heatmap-cell.is-recorded { background: var(--amber); }
+  .heatmap-cell.is-future { visibility: hidden; }
+  .heatmap-cell.is-today { box-shadow: inset 0 0 0 1.5px var(--amber-deep); }
+  .heatmap-legend { display: flex; align-items: center; gap: 5px; margin-top: 8px; font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+  .heatmap-legend-swatch { width: 10px; height: 10px; border-radius: 2px; background: var(--border); display: inline-block; }
+  .heatmap-legend-swatch.is-recorded { background: var(--amber); margin-left: 8px; }
+
   /* ═══ 🏆 称号(実績) ═══ */
   .titles-chips { display: flex; flex-wrap: wrap; gap: 8px; }
   /* .card h2のKaisei Decol/16.5px/amber-deepをそのまま引き継ぐと見出しみたいに大きく浮いてしまうため、
@@ -616,6 +637,7 @@
   .goal-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
   .goal-row-summary { font-size: 11px; color: var(--text-dim); }
   .goal-row-summary.is-achieved { color: var(--green); }
+  .goal-row-pace-badge { color: var(--amber-deep); font-weight: 700; }
   .pf-move-btn { padding: 5px 7px; font-size: 11px; line-height: 1; }
   .pf-color-input { width: 28px; height: 28px; padding: 0; border: 1px solid var(--border); border-radius: 50%;
     background: none; cursor: pointer; flex-shrink: 0; overflow: hidden; }
@@ -1036,9 +1058,30 @@
       <p class="field-hint" data-i18n="pace.dailyRateHint">デイリークエストや光の収集などをこなした場合の、ざっくりした目安で大丈夫です。</p>
       <button type="button" class="fill-current-btn" id="finishTodayBtn">✅ 今日の分を集め終わった(+15本)</button>
       <div class="pace-suggest" id="paceSuggest" style="display:none;">
-        <span class="pace-suggest-text" id="paceSuggestText"></span>
+        <div class="pace-suggest-texts">
+          <span class="pace-suggest-text" id="paceSuggestText"></span>
+          <span class="pace-suggest-text" id="paceSuggestRange" style="display:none;"></span>
+        </div>
         <button type="button" class="fill-current-btn" id="paceSuggestBtn" data-i18n="pace.useActualBtn">📈 実際のペースを使う</button>
       </div>
+    </div>
+    <hr class="divider">
+    <!-- ▸ 目標ごとの1日の集めペース個別設定(任意): オフの間は上の共通ペース(dailyRate)を
+         そのまま使う。オンにした目標だけ、この専用の値を計算に使う(saveActiveGoalFields/
+         loadActiveGoalIntoFields・goalEffectiveDailyRate()参照)。 -->
+    <div class="field" id="goalPaceOverrideField">
+      <div class="toggle-field">
+        <div class="toggle-text">
+          <span class="toggle-title" data-i18n="pace.overrideToggleTitle">この目標専用のペースを使う</span>
+          <span class="toggle-sub" data-i18n="pace.overrideToggleSub">オフのままなら、上の共通ペースがそのまま使われます</span>
+        </div>
+        <input type="checkbox" id="goalPaceOverrideCheckbox" onchange="goalPaceOverrideToggle(this.checked)" style="width:20px; height:20px; accent-color: var(--amber); cursor:pointer; flex-shrink:0;">
+      </div>
+      <div class="input-suffix" id="goalPaceOverrideInputWrap" style="display:none; margin-top:10px;">
+        <input type="number" id="goalPaceOverrideInput" inputmode="numeric" min="0" max="25" step="1" data-i18n-placeholder="pace.overridePlaceholder" placeholder="例: 20">
+        <span class="unit" data-i18n="pace.heartsUnit">本/日</span>
+      </div>
+      <p class="field-hint" id="goalPaceOverrideHint" style="display:none;"></p>
     </div>
     <hr class="divider">
     <div class="field">
@@ -1085,6 +1128,7 @@
   <section class="card">
     <h2 data-i18n="history.heading">📜 獲得履歴</h2>
     <div class="streak-strip" id="streakStrip"></div>
+    <div class="streak-heatmap-wrap" id="streakHeatmapWrap"></div>
     <div class="history-goal-filter-row" id="historyGoalFilterRow" style="display:none;">
       <label class="history-goal-filter-label" for="historyGoalFilter" data-i18n="history.filterLabel">🎯 表示する目標</label>
       <select class="history-goal-filter" id="historyGoalFilter"></select>
@@ -1345,7 +1389,7 @@
       manageBtnTitle: { ja: '目標を管理', en: 'Manage goals' },
       modalTitle: { ja: '🗂️ 目標（複数目標管理）', en: '🗂️ Goals' },
       newNamePlaceholder: { ja: '新しい目標名', en: 'New goal name' },
-      hint: { ja: '複数の目標を切り替えて管理できます。目標を切り替えると、目標本数・使用予定本数・目標日がその目標専用の内容に切り替わります(所持本数・集めペースはプロフィール共通です)。', en: "Switch between multiple goals. Switching a goal swaps its target amount, planned usage, and target date (current amount and collection pace stay shared across the whole profile)." },
+      hint: { ja: '複数の目標を切り替えて管理できます。目標を切り替えると、目標本数・使用予定本数・目標日がその目標専用の内容に切り替わります(所持本数・集めペースはプロフィール共通ですが、集めペースは目標ごとに専用の値を設定することもできます)。', en: "Switch between multiple goals. Switching a goal swaps its target amount, planned usage, and target date (current amount and collection pace stay shared across the whole profile, though you can also set a pace just for an individual goal)." },
       deleteConfirmText: { ja: '「{name}」を削除しますか？この目標の目標設定も削除されます。', en: 'Delete "{name}"? This goal\'s target settings will also be deleted.' },
       moveUpBtnTitle: { ja: '上へ移動', en: 'Move up' },
       moveDownBtnTitle: { ja: '下へ移動', en: 'Move down' },
@@ -1354,7 +1398,8 @@
       summaryNoTarget: { ja: '目標本数が未設定です', en: 'No target amount set' },
       summaryAchieved: { ja: '🎉 達成済み', en: '🎉 Goal reached' },
       summaryRemainingTemplate: { ja: '残り{remaining}本（{pct}%）', en: '{remaining} candles left ({pct}%)' },
-      summaryDaysTemplate: { ja: ' ・あと約{n}日', en: ' · about {n} days left' }
+      summaryDaysTemplate: { ja: ' ・あと約{n}日', en: ' · about {n} days left' },
+      paceOverrideBadge: { ja: '⚡専用{n}本/日', en: '⚡ {n}/day' }
     },
     pace: {
       heading: { ja: '🕯️ 1日の集めペース', en: '🕯️ Daily Collection Pace' },
@@ -1367,7 +1412,13 @@
       toggleSub: { ja: 'ハート1個につき、1日キャンドル3本消費', en: 'Each Heart costs 3 Candles/day' },
       heartsUnit: { ja: '本/日', en: 'candles/day' },
       actualPaceLabelTemplate: { ja: '📊 獲得履歴から算出した実際の平均ペース: 約<b>{n}本/日</b>', en: '📊 Your actual average pace from history: about <b>{n}/day</b>' },
-      useActualBtn: { ja: '📈 実際のペースを使う', en: '📈 Use My Actual Pace' }
+      useActualBtn: { ja: '📈 実際のペースを使う', en: '📈 Use My Actual Pace' },
+      actualPaceRangeTemplate: { ja: '📅 最近のペースの振れ幅なら、{dateFast}〜{dateSlow}の間に届きそうです', en: '📅 At your recent pace, expect to reach it between {dateFast} and {dateSlow}' },
+      actualPaceRangeSingleTemplate: { ja: '📅 最近のペースはほぼ一定で、{date}頃に届きそうです', en: '📅 Your recent pace has been steady — expect to reach it around {date}' },
+      overrideToggleTitle: { ja: 'この目標専用のペースを使う', en: 'Use a pace just for this goal' },
+      overrideToggleSub: { ja: 'オフのままなら、上の共通ペースがそのまま使われます', en: 'Leave this off to keep using the shared pace above' },
+      overridePlaceholder: { ja: '例: 20', en: 'e.g. 20' },
+      overrideActiveHint: { ja: '🎯 この目標の計算には、上のスライダーの代わりに1日{n}本が使われます', en: "🎯 This goal's calculations use {n}/day instead of the shared slider above" }
     },
     result: {
       heading: { ja: '📊 結果', en: '📊 Result' },
@@ -1415,7 +1466,13 @@
     streak: {
       activeTemplate: { ja: '🔥 連続{n}日目の記録中', en: '🔥 Day {n} of your streak' },
       bestSuffixTemplate: { ja: '（最長 {n}日）', en: ' (Best: {n} days)' },
-      emptyText: { ja: '📅 記録するとストリークが貯まります。今日の分を記録してみましょう。', en: '📅 Start recording to build a streak — try logging today\'s collection.' }
+      emptyText: { ja: '📅 記録するとストリークが貯まります。今日の分を記録してみましょう。', en: '📅 Start recording to build a streak — try logging today\'s collection.' },
+      heatmapLabel: { ja: '📅 記録カレンダー(直近{weeks}週間)', en: '📅 Activity Calendar (last {weeks} weeks)' },
+      heatmapAriaLabel: { ja: '連続記録日数のカレンダーヒートマップ', en: 'Calendar heatmap of your recording activity' },
+      heatmapLegendEmpty: { ja: '未記録', en: 'No record' },
+      heatmapLegendRecorded: { ja: '記録した日', en: 'Recorded day' },
+      heatmapCellRecordedTemplate: { ja: '{date}：記録あり', en: '{date}: Recorded' },
+      heatmapCellEmptyTemplate: { ja: '{date}：記録なし', en: '{date}: No record' }
     },
     titles: {
       heading: { ja: '🏆 称号', en: '🏆 Titles' },
@@ -1516,6 +1573,7 @@
     if (typeof renderPaceSuggestion === 'function') renderPaceSuggestion();
     if (typeof renderDateQuickPresets === 'function') renderDateQuickPresets();
     if (typeof renderStreak === 'function') renderStreak();
+    if (typeof renderStreakHeatmap === 'function') renderStreakHeatmap();
     if (typeof renderTitles === 'function') renderTitles();
     updateLangButtonsUI();
   }
@@ -3028,7 +3086,11 @@
           name: g.name,
           target: goalFieldToString(g.target),
           plannedUsage: goalFieldToString(g.plannedUsage),
-          targetDate: goalFieldToString(g.targetDate)
+          targetDate: goalFieldToString(g.targetDate),
+          // 目標ごとの1日の集めペース個別設定(任意)。空文字なら未設定=共通ペースを使う
+          // (goalEffectiveDailyRate()参照)。既存データ(この項目が無い旧保存分)は
+          // goalFieldToString(undefined)により''として読み込まれ、未設定として扱われる。
+          dailyRateOverride: goalFieldToString(g.dailyRateOverride)
         };
       });
       if (goals.length === 0) return null;
@@ -3053,7 +3115,8 @@
       name: GOAL_DEFAULT_NAME_MARKER,
       target: goalFieldToString(legacy.target),
       plannedUsage: goalFieldToString(legacy.plannedUsage),
-      targetDate: goalFieldToString(legacy.targetDate)
+      targetDate: goalFieldToString(legacy.targetDate),
+      dailyRateOverride: '' // 旧形式(単一目標)にはこの概念が無いため、常に未設定で始める
     };
     var data = { goals: [goal], activeGoalId: goal.id };
     goalSaveData(data);
@@ -3073,6 +3136,7 @@
     els.target.value = sanitizeNumericFieldValue(g.target || '');
     els.plannedUsage.value = sanitizeNumericFieldValue(g.plannedUsage || '');
     els.targetDate.value = g.targetDate || '';
+    loadGoalPaceOverrideIntoFields(g);
   }
   // 目標設定カードの入力欄(els.target等)の現在値を、アクティブな目標へ書き戻す。
   function saveActiveGoalFields() {
@@ -3081,8 +3145,80 @@
     g.target = sanitizeNumericFieldValue(els.target.value);
     g.plannedUsage = sanitizeNumericFieldValue(els.plannedUsage.value);
     g.targetDate = els.targetDate.value;
+    g.dailyRateOverride = goalPaceOverrideFieldValue();
     goalSaveData(data);
   }
+
+  /* ================================================================
+     🕯️ 目標ごとの1日の集めペース個別設定(任意)
+     所持本数・集めペース(dailyRate/heartsToSend)はプロフィール共通が基本だが、
+     「イベントろうそくは一気に集めたい」「長期の見た目集めはゆっくりでいい」など
+     目標によってペース感が異なる場合に備え、目標(goal)ごとにこの値だけを個別に
+     上書きできるようにする。未設定(''）の場合は共通のels.dailyRateへフォールバックする。
+     ================================================================ */
+  // 目標gの保存済みデータと、共通スライダーの値globalRateから、実際に計算へ使う
+  // 「実効ペース」を返す(0〜25の範囲は共通ペースと同じ制約に揃える)。目標管理モーダル
+  // (goalComputeSummary)など、今アクティブとは限らない目標を保存データから扱う場面で使う。
+  function goalEffectiveDailyRate(g, globalRate) {
+    if (g && g.dailyRateOverride !== undefined && g.dailyRateOverride !== null && g.dailyRateOverride !== '') {
+      var n = parseInt(g.dailyRateOverride, 10);
+      if (isFinite(n)) return Math.max(0, Math.min(25, n));
+    }
+    return globalRate;
+  }
+  // 今アクティブな目標向け: 保存データ(goalGetActive())ではなく、チェックボックス・
+  // 入力欄のDOMの現在値を直接見て実効ペースを返す。update()の他の値(target等)と同じく
+  // 「入力欄が今表示している値」を単一の情報源として扱うことで、入力→update()→saveState()
+  // という既存の呼び出し順(update()の時点ではまだ保存前)でも、保存の有無に関わらず常に
+  // 最新の入力内容がそのまま計算に反映されるようにする。
+  function currentEffectiveDailyRate(globalRate) {
+    if (els.goalPaceOverrideCheckbox && els.goalPaceOverrideCheckbox.checked) {
+      return Math.max(0, Math.min(25, parseInt(els.goalPaceOverrideInput.value, 10) || 0));
+    }
+    return globalRate;
+  }
+  // チェックボックスがオフなら常に''(=未設定)として保存する。オンなのに入力欄が空の
+  // 場合も''のまま(=共通ペースにフォールバックする、中途半端な0本上書きにはしない)。
+  function goalPaceOverrideFieldValue() {
+    if (!els.goalPaceOverrideCheckbox || !els.goalPaceOverrideCheckbox.checked) return '';
+    return sanitizeNumericFieldValue(els.goalPaceOverrideInput.value);
+  }
+  // アクティブな目標gの保存値から、チェックボックス・入力欄・入力欄の表示/非表示を復元する。
+  function loadGoalPaceOverrideIntoFields(g) {
+    var hasOverride = !!(g && g.dailyRateOverride !== undefined && g.dailyRateOverride !== null && g.dailyRateOverride !== '');
+    if (els.goalPaceOverrideCheckbox) els.goalPaceOverrideCheckbox.checked = hasOverride;
+    if (els.goalPaceOverrideInput) els.goalPaceOverrideInput.value = hasOverride ? g.dailyRateOverride : '';
+    updateGoalPaceOverrideVisibility();
+  }
+  // 入力欄の表示/非表示と、有効時の案内文(field-hint)を、現在のチェック状態・入力値に
+  // 合わせて更新する。update()内・チェックボックス変更時・目標切替時など、関連する
+  // 値が変わりうるタイミングで都度呼び出す(呼び出し側の網羅はgoalPaceOverrideToggle・
+  // update()・loadGoalPaceOverrideIntoFields参照)。
+  function updateGoalPaceOverrideVisibility() {
+    var checked = !!(els.goalPaceOverrideCheckbox && els.goalPaceOverrideCheckbox.checked);
+    if (els.goalPaceOverrideInputWrap) els.goalPaceOverrideInputWrap.style.display = checked ? '' : 'none';
+    if (els.goalPaceOverrideHint) {
+      if (checked) {
+        var n = Math.max(0, Math.min(25, parseInt(els.goalPaceOverrideInput.value, 10) || 0));
+        els.goalPaceOverrideHint.textContent = t('pace.overrideActiveHint', { n: fmt(n) });
+        els.goalPaceOverrideHint.style.display = '';
+      } else {
+        els.goalPaceOverrideHint.style.display = 'none';
+      }
+    }
+  }
+  // チェックボックスのonchangeから呼ばれる(IIFE内で完結するためwindowへの公開が必要)。
+  function goalPaceOverrideToggle(checked) {
+    // オンにした直後・入力欄がまだ空の場合、0本から始めると分かりにくいため、
+    // 今の共通スライダーの値を初期値としてコピーしておく(あくまで初期値、以降は独立して編集可能)。
+    if (checked && els.goalPaceOverrideInput && !els.goalPaceOverrideInput.value) {
+      els.goalPaceOverrideInput.value = els.dailyRate.value;
+    }
+    updateGoalPaceOverrideVisibility();
+    saveActiveGoalFields();
+    update();
+  }
+  window.goalPaceOverrideToggle = goalPaceOverrideToggle;
 
   function goalRenderBar() {
     var data = goalEnsureInit();
@@ -3135,6 +3271,12 @@
       } else {
         summaryHtml = t('goalMulti.summaryRemainingTemplate', { remaining: fmt(summary.remaining), pct: summary.pct }) +
           (summary.days !== null ? t('goalMulti.summaryDaysTemplate', { n: summary.days }) : '');
+      }
+      // この目標がペースを個別設定(dailyRateOverride)している場合、一覧上でも分かるよう
+      // 小さなバッジを添える(⚡専用N本/日)。
+      if (g.dailyRateOverride !== undefined && g.dailyRateOverride !== null && g.dailyRateOverride !== '') {
+        var overrideN = Math.max(0, Math.min(25, parseInt(g.dailyRateOverride, 10) || 0));
+        summaryHtml += ' <span class="goal-row-pace-badge">' + t('goalMulti.paceOverrideBadge', { n: fmt(overrideN) }) + '</span>';
       }
       html += '<div class="pf-row' + (g.id === activeId ? ' active' : '') + '">' +
         '<span class="goal-row-main">' +
@@ -3240,7 +3382,8 @@
       name: t('goalMulti.duplicateNameTemplate', { name: goalDisplayName(src) }).slice(0, 20),
       target: src.target,
       plannedUsage: src.plannedUsage,
-      targetDate: src.targetDate
+      targetDate: src.targetDate,
+      dailyRateOverride: src.dailyRateOverride
     };
     data.goals.splice(idx + 1, 0, copy);
     goalSaveData(data);
@@ -3250,8 +3393,9 @@
 
   // 目標切替モーダルの一覧に添える要約(残り本数・進捗率・今のペースでの目安日数)。
   // 所持本数(current)・集めペース(dailyRate/heartsToSend)はプロフィール共通のため、
-  // 「今アクティブな目標」に限らずどの目標の行でもこの共通の値を使って計算する
-  // (goalMulti.hintで案内している通り)。
+  // 「今アクティブな目標」に限らずどの目標の行でもこの共通の値を使って計算するが、
+  // その目標自身がペースを個別設定(dailyRateOverride)している場合はそちらを優先する
+  // (goalEffectiveDailyRate参照。goalMulti.hintで案内している通り)。
   function goalComputeSummary(g) {
     var target = Math.max(0, parseFloat(g.target) || 0);
     var plannedUsage = Math.max(0, parseFloat(g.plannedUsage) || 0);
@@ -3261,7 +3405,8 @@
     var remaining = effectiveTarget - current;
     var pct = Math.min(100, Math.round((current / effectiveTarget) * 100));
     if (remaining <= 0) return { hasTarget: true, achieved: true, pct: 100 };
-    var dailyRate = Math.max(0, Math.min(25, parseInt(els.dailyRate.value, 10) || 0));
+    var globalDailyRate = Math.max(0, Math.min(25, parseInt(els.dailyRate.value, 10) || 0));
+    var dailyRate = goalEffectiveDailyRate(g, globalDailyRate);
     var heartsToSend = Math.max(0, parseFloat(els.heartsToSend.value) || 0);
     var totalDaily = dailyRate - heartsToSend * 3;
     var days = totalDaily > 0 ? Math.ceil(remaining / totalDaily) : null;
@@ -3274,7 +3419,7 @@
     if (!name) return;
     var data = goalEnsureInit();
     var id = goalGenId();
-    data.goals.push({ id: id, name: name.slice(0, 20), target: '', plannedUsage: '', targetDate: '' });
+    data.goals.push({ id: id, name: name.slice(0, 20), target: '', plannedUsage: '', targetDate: '', dailyRateOverride: '' });
     goalSaveData(data);
     if (input) input.value = '';
     goalSwitch(id);
@@ -3365,7 +3510,11 @@
     historyList: document.getElementById('historyList'),
     historyClearBtn: document.getElementById('historyClearBtn'),
     historyGoalFilterRow: document.getElementById('historyGoalFilterRow'),
-    historyGoalFilter: document.getElementById('historyGoalFilter')
+    historyGoalFilter: document.getElementById('historyGoalFilter'),
+    goalPaceOverrideCheckbox: document.getElementById('goalPaceOverrideCheckbox'),
+    goalPaceOverrideInput: document.getElementById('goalPaceOverrideInput'),
+    goalPaceOverrideInputWrap: document.getElementById('goalPaceOverrideInputWrap'),
+    goalPaceOverrideHint: document.getElementById('goalPaceOverrideHint')
   };
 
   // 入力内容をブラウザに保存する。localStorageが使えない環境(プライベートモード、
@@ -3502,6 +3651,7 @@
     // 別経路なのでここには来ない)のたびに、今日をストリークとして記録し称号判定も行う。
     streakRecordToday();
     renderStreak();
+    renderStreakHeatmap();
     if (typeof refreshTitlesUI === 'function') refreshTitlesUI();
   }
   function renderHistory() {
@@ -3690,6 +3840,97 @@
   }
 
   /* ================================================================
+     📅 連続記録カレンダーヒートマップ(GitHubの草グラフ風)
+     🔥ストリーク機能がすでに持っている軽量な日付ログ(STREAK_KEYのdays、
+     {'YYYY-MM-DD':1,...})をそのまま可視化し、「現在/最長」の数値だけでは
+     見えない、これまでの記録パターン全体を一目で振り返れるようにする。
+     直近の週(今週の土曜)を右端として、そこから遡って列(週)を並べる。
+     列数(週数)は「使い始めてからの実日数」に応じて可変にしつつ、極端に
+     狭い/広いグリッドにならないよう下限・上限(GitHubの草と同じ1年分)で
+     クランプする。横幅が収まらない場合は横スクロールで見られるようにする。
+     ================================================================ */
+  var HEATMAP_MIN_WEEKS = 18; // 使い始めたばかりでも極端に小さいグリッドにならないための下限
+  var HEATMAP_MAX_WEEKS = 53; // GitHubの草(直近1年)と同じ上限
+  function heatmapMonthShort(monthIdx) {
+    return LANG === 'ja' ? (monthIdx + 1) + '月' : MONTHS_EN[monthIdx].slice(0, 3);
+  }
+  // 表示範囲(グリッドの開始日・週数)を、記録済みの最も古い日付とHEATMAP_MIN/MAX_WEEKSから決める。
+  function computeHeatmapRange(days) {
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var minDate = today;
+    Object.keys(days).forEach(function (k) {
+      var p = k.split('-');
+      var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+      if (!isNaN(d.getTime()) && d < minDate) minDate = d;
+    });
+    var daysSinceEarliest = Math.max(0, Math.round((today - minDate) / 86400000));
+    var weeksNeeded = Math.ceil((daysSinceEarliest + 1) / 7) + 1;
+    var weeks = Math.min(HEATMAP_MAX_WEEKS, Math.max(HEATMAP_MIN_WEEKS, weeksNeeded));
+    // グリッドの右端(最終列)を「今週の土曜」に揃える(まだ来ていない未来日はis-futureとして薄く隠す)
+    var endOfThisWeek = new Date(today);
+    endOfThisWeek.setDate(endOfThisWeek.getDate() + (6 - today.getDay()));
+    var start = new Date(endOfThisWeek);
+    start.setDate(start.getDate() - (weeks * 7 - 1));
+    return { start: start, weeks: weeks, today: today };
+  }
+  function renderStreakHeatmap() {
+    var wrap = document.getElementById('streakHeatmapWrap');
+    if (!wrap) return;
+    var s = loadStreak();
+    var range = computeHeatmapRange(s.days);
+    var todayStr = streakDateStr(range.today);
+    var lastMonth = null;
+    // バグ修正: 前回描いたラベルから2列未満しか離れていない場合、ラベル同士の文字が
+    // (white-space:nowrapで折り返さないため)重なって読めなくなる(例:「4月」「5月」が
+    // 隣接列だと「4月5月」のように潰れる)。直前のラベル列(lastLabelCol)を覚えておき、
+    // 最低2列分の間隔が空くまで次のラベルの描画を見送る(GitHubの草グラフも同様に、
+    // 月が変わってもラベルを間引くことがある)。
+    var lastLabelCol = -99;
+    var monthLabelsHtml = '';
+    var cellsHtml = '';
+    for (var w = 0; w < range.weeks; w++) {
+      var colDate = new Date(range.start);
+      colDate.setDate(colDate.getDate() + w * 7);
+      var monthIdx = colDate.getMonth();
+      if (monthIdx !== lastMonth) {
+        lastMonth = monthIdx;
+        if (w - lastLabelCol >= 2) {
+          monthLabelsHtml += '<span class="heatmap-month-label" style="grid-column:' + (w + 1) + '">' + heatmapMonthShort(monthIdx) + '</span>';
+          lastLabelCol = w;
+        }
+      }
+      for (var d = 0; d < 7; d++) {
+        var cellDate = new Date(range.start);
+        cellDate.setDate(cellDate.getDate() + w * 7 + d);
+        var dateStr = streakDateStr(cellDate);
+        var isFuture = cellDate > range.today;
+        var recorded = !!s.days[dateStr];
+        var cls = 'heatmap-cell' + (isFuture ? ' is-future' : (recorded ? ' is-recorded' : ' is-empty')) + (dateStr === todayStr ? ' is-today' : '');
+        var titleAttr = '';
+        if (!isFuture) {
+          var titleKey = recorded ? 'streak.heatmapCellRecordedTemplate' : 'streak.heatmapCellEmptyTemplate';
+          titleAttr = ' title="' + pfEscapeHtml(t(titleKey, { date: jpDateShort(cellDate) })) + '"';
+        }
+        cellsHtml += '<span class="' + cls + '" style="grid-column:' + (w + 1) + ';grid-row:' + (d + 1) + '" aria-hidden="true"' + titleAttr + '></span>';
+      }
+    }
+    wrap.innerHTML =
+      '<p class="heatmap-label">' + t('streak.heatmapLabel', { weeks: range.weeks }) + '</p>' +
+      '<div class="heatmap-scroll" role="img" aria-label="' + pfEscapeHtml(t('streak.heatmapAriaLabel')) + '">' +
+        '<div class="heatmap-months" style="grid-template-columns:repeat(' + range.weeks + ', var(--hm-cell))">' + monthLabelsHtml + '</div>' +
+        '<div class="heatmap-grid" style="grid-template-columns:repeat(' + range.weeks + ', var(--hm-cell)); grid-template-rows:repeat(7, var(--hm-cell))">' + cellsHtml + '</div>' +
+      '</div>' +
+      '<div class="heatmap-legend">' +
+        '<span class="heatmap-legend-swatch"></span><span>' + t('streak.heatmapLegendEmpty') + '</span>' +
+        '<span class="heatmap-legend-swatch is-recorded"></span><span>' + t('streak.heatmapLegendRecorded') + '</span>' +
+      '</div>';
+    // 直近(=今週・グリッドの右端)がまず目に入るよう、初期表示は右端までスクロールしておく
+    var scrollEl = wrap.querySelector('.heatmap-scroll');
+    if (scrollEl) scrollEl.scrollLeft = scrollEl.scrollWidth;
+  }
+
+  /* ================================================================
      🏆 称号(実績)
      ストリークの最長記録(streak.longest、上ですでにHWM化済み)と、所持本数の
      過去最高値(currentMax、ここでMath.max()により保持)の2軸で判定する。
@@ -3823,9 +4064,46 @@
     var spanDays = Math.max(1, (maxTime - minTime) / 86400000);
     return total / spanDays;
   }
+  // 📅 同じ14日ウィンドウ(無ければ全履歴)から、単一の平均ペースではなく実際の
+  // 振れ幅(最短〜最長で目標に届く見込み)を出すための最小/最大の「区間ペース」を求める。
+  // computeActualDailyRate()が全サンプルをまとめて(合計÷全体の期間)で1つの平均を
+  // 出すのに対し、こちらは時系列順に隣り合う記録どうしの区間ごとに(その区間の増減÷
+  // その区間の日数)を求め、その中の最小値・最大値を返す。サンプルが2件しかない
+  // (=区間が1つしか作れない)場合はmin===maxとなり、呼び出し側で「幅なし」として
+  // 単一の目安日にフォールバックする(renderPaceSuggestion参照)。
+  function computeActualDailyRateRange() {
+    var list = loadHistory();
+    if (!list || list.length < 2) return null;
+    var now = Date.now();
+    var windowStart = now - PACE_SUGGEST_WINDOW_MS;
+    var inWindow = list.filter(function (e) { return e.time >= windowStart; });
+    var sample = inWindow.length >= 2 ? inWindow : list;
+    if (sample.length < 2) return null;
+    var chrono = sample.slice().sort(function (a, b) { return a.time - b.time; });
+    var segRates = [];
+    for (var i = 1; i < chrono.length; i++) {
+      var spanDays = (chrono[i].time - chrono[i - 1].time) / 86400000;
+      if (spanDays <= 0) continue; // 同時刻の記録同士は区間として扱えないためスキップ
+      segRates.push((chrono[i].amount || 0) / spanDays);
+    }
+    if (segRates.length === 0) return null;
+    var min = segRates[0], max = segRates[0];
+    for (var j = 1; j < segRates.length; j++) {
+      if (segRates[j] < min) min = segRates[j];
+      if (segRates[j] > max) max = segRates[j];
+    }
+    return { min: min, max: max };
+  }
+  // 日付を「9月2日」/「Sep 2」のような短い形式(曜日なし)で表示する(結果カードの
+  // jpDate()は曜日付きでやや長いため、この幅表示ではより簡潔なこちらを使う)。
+  function jpDateShort(date) {
+    if (LANG === 'ja') return (date.getMonth() + 1) + '月' + date.getDate() + '日';
+    return MONTHS_EN[date.getMonth()].slice(0, 3) + ' ' + date.getDate();
+  }
   function renderPaceSuggestion() {
     var wrap = document.getElementById('paceSuggest');
     var textEl = document.getElementById('paceSuggestText');
+    var rangeEl = document.getElementById('paceSuggestRange');
     if (!wrap || !textEl) return;
     var rate = computeActualDailyRate();
     if (rate === null || rate <= 0) {
@@ -3834,6 +4112,33 @@
     }
     textEl.innerHTML = t('pace.actualPaceLabelTemplate', { n: fmt(rate) });
     wrap.style.display = '';
+
+    if (!rangeEl) return;
+    // 目標本数が設定されていて、かつ最短/最長どちらのペースでもプラス(=いつか届く)の
+    // 場合にのみ、日付の幅を表示する。目標未設定・既に達成済み・振れ幅の片側以下が
+    // 0以下(=そのペースのままだと届く見込みが立たない)の場合は、無理に幅を作らず
+    // 従来通り上の平均ペース行のみを表示する(見せかけの幅で誤解させないため)。
+    var target = Math.max(0, parseFloat(els.target.value) || 0);
+    var plannedUsage = Math.max(0, parseFloat(els.plannedUsage.value) || 0);
+    var current = Math.max(0, parseFloat(els.current.value) || 0);
+    var remaining = (target + plannedUsage) - current;
+    var range = (target > 0 && remaining > 0) ? computeActualDailyRateRange() : null;
+    if (range && range.min > 0 && range.max > 0) {
+      var now = Date.now();
+      var daysFast = Math.max(0, Math.ceil(remaining / range.max));
+      var daysSlow = Math.max(0, Math.ceil(remaining / range.min));
+      var dateFast = new Date(now + daysFast * 86400000);
+      if (daysSlow <= daysFast) {
+        // 最近の振れ幅がほぼ無い(min≈max)場合は、幅を見せても意味が薄いため単一の目安日にする
+        rangeEl.textContent = t('pace.actualPaceRangeSingleTemplate', { date: jpDateShort(dateFast) });
+      } else {
+        var dateSlow = new Date(now + daysSlow * 86400000);
+        rangeEl.textContent = t('pace.actualPaceRangeTemplate', { dateFast: jpDateShort(dateFast), dateSlow: jpDateShort(dateSlow) });
+      }
+      rangeEl.style.display = '';
+    } else {
+      rangeEl.style.display = 'none';
+    }
   }
   els.historyList.addEventListener('click', function (ev) {
     var btn = ev.target.closest ? ev.target.closest('.history-undo-btn') : null;
@@ -3878,17 +4183,28 @@
     var target = Math.max(0, parseFloat(els.target.value) || 0);
     var plannedUsage = Math.max(0, parseFloat(els.plannedUsage.value) || 0);
     var current = Math.max(0, parseFloat(els.current.value) || 0);
-    var dailyRate = Math.max(0, Math.min(25, parseInt(els.dailyRate.value, 10) || 0));
+    // dailyRate: 実際の計算(内訳・目標到達までの日数など)に使う「実効ペース」。
+    // アクティブな目標がペースを個別設定(dailyRateOverride、チェックボックス・入力欄の
+    // 現在のDOM値)していればそちらを、していなければ共通スライダー(globalDailyRate)の
+    // 値をそのまま使う(currentEffectiveDailyRate参照。保存データではなく入力欄の現在値を
+    // 直接見るのは、他の値(target等)と同じくinput→update()→saveState()の順で呼ばれても
+    // 保存前の最新入力がそのまま反映されるようにするため)。スライダー自体の見た目
+    // (つまみの位置・%表示・「灰キャン」注記)は、個別設定の有無に関わらず常に
+    // globalDailyRateのまま扱う(スライダーは共通ペースそのものの入力欄であり、目標を
+    // 切り替えるたびに勝手に動いてしまうと共通の値を編集しているつもりが崩れてしまうため)。
+    var globalDailyRate = Math.max(0, Math.min(25, parseInt(els.dailyRate.value, 10) || 0));
+    var dailyRate = currentEffectiveDailyRate(globalDailyRate);
     var heartsToSend = Math.max(0, parseFloat(els.heartsToSend.value) || 0);
 
     var heartCost = heartsToSend * 3;
     var totalDaily = dailyRate - heartCost;
 
-    var sliderPct = (dailyRate / 25) * 100;
+    var sliderPct = (globalDailyRate / 25) * 100;
     els.dailyRate.style.setProperty('--fill', sliderPct + '%');
-    els.dailyRateReadout.textContent = t('pace.dailyRateReadout', { n: dailyRate }) + (dailyRate === 20 ? t('pace.ashRouteNote') : '');
+    els.dailyRateReadout.textContent = t('pace.dailyRateReadout', { n: globalDailyRate }) + (globalDailyRate === 20 ? t('pace.ashRouteNote') : '');
     els.finishTodayBtn.innerHTML = t('pace.finishTodayBtn', { n: dailyRate });
     els.finishTodayBtn.disabled = dailyRate <= 0;
+    updateGoalPaceOverrideVisibility();
 
     // 使用予定本数は目標本数に上乗せして必要本数を計算する(目標として貯めておきたい分＋別途使う予定の分)
     var effectiveTarget = target + plannedUsage;
@@ -3968,6 +4284,7 @@
     els.resultContent.innerHTML = html;
 
     renderTrendChart();
+    renderPaceSuggestion();
   }
 
   // 所持本数をプロフィール共通の所持キャンドル数(wishOwnCurrency.candle)へ書き戻す。
@@ -3982,7 +4299,8 @@
     if (overlay && overlay.classList.contains('is-visible')) pfRenderCurrency();
   }
 
-  [els.target, els.plannedUsage, els.targetDate, els.dailyRate, els.heartsToSend].forEach(function (el) {
+  [els.target, els.plannedUsage, els.targetDate, els.dailyRate, els.heartsToSend, els.goalPaceOverrideInput].forEach(function (el) {
+    if (!el) return;
     el.addEventListener('input', function () {
       update();
       saveState();
@@ -4070,10 +4388,13 @@
     syncCommittedCurrent();
   });
 
-  // 「今日の分を集め終わった」ボタン: 「1日の集めペース」スライダーの本数をそのまま所持本数に加算する。
+  // 「今日の分を集め終わった」ボタン: 「1日の集めペース」の本数をそのまま所持本数に加算する。
+  // アクティブな目標がペースを個別設定している場合は、共通スライダーの代わりにその値を使う
+  // (ボタンのラベル自体もupdate()内でこの実効ペースに揃えて表示している)。
   els.finishTodayBtn.addEventListener('click', function () {
     clearCurrentCommitTimer();
-    var dailyRate = Math.max(0, Math.min(25, parseInt(els.dailyRate.value, 10) || 0));
+    var globalDailyRate = Math.max(0, Math.min(25, parseInt(els.dailyRate.value, 10) || 0));
+    var dailyRate = currentEffectiveDailyRate(globalDailyRate);
     if (dailyRate <= 0) return;
     var current = Math.max(0, parseFloat(els.current.value) || 0);
     els.current.value = Math.round((current + dailyRate) * 100) / 100;
@@ -4308,6 +4629,7 @@
   renderPaceSuggestion();
   initDateQuickPresets();
   renderStreak();
+  renderStreakHeatmap();
   refreshTitlesUI(); // 既存ユーザーの所持本数がすでに閾値を超えている場合の追いつき判定も兼ねる
 })();
 </script>
