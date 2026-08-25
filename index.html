@@ -758,6 +758,12 @@
     display: inline-flex; align-items: center; gap: 6px; font-weight: 500;
   }
   .sidebar-toggle-btn:hover { border-color: var(--amber); }
+  /* 🖥️ デスクトップレイアウト統一: ドックの「☰ ツール」ボタンと同じ関連ツール
+     オーバーレイを開くだけのこのヘッダー側ボタンは、ドックが常時表示される
+     850px以上の幅では重複導線になるため非表示にする(他ツール(wings等)と同じ
+     基準)。#langToggleBtnは.sidebar-toggle-btnクラスを共用しているがidを
+     指定しているためこちらは対象外で、そのまま表示され続ける。 */
+  @media (min-width: 850px) { #sidebarToggleBtn { display: none; } }
   .sidebar-close-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-dim); padding: 0; line-height: 1; flex-shrink: 0; }
   .head-btn-group { display: flex; gap: 8px; }
   .lang-toggle-btn { min-width: 42px; justify-content: center; }
@@ -2648,7 +2654,7 @@
   // ═══ データのエクスポート/インポート/全削除 ═══
   // localStorage は taipak5000.github.io 配下の全ツールで共有されているため、
   // ここで書き出す/読み込む/消す内容はこのサイトだけでなく item・wings・
-  // companion・spirit-catalog 等すべてのデータが対象になる。
+  // companion 等すべてのデータが対象になる。
   function dmOpenModal() {
     document.getElementById('dmStatus').textContent = '';
     document.getElementById('dmImportConfirmArea').innerHTML = '';
@@ -2761,7 +2767,7 @@
   // 🔑 保存キーをサイトごとに名前空間化する（プロフィール単位のnsKey()とは別軸）。
   // taipak5000.github.io系サイトは全サイトが同一オリジンでlocalStorageを共有するため、
   // 固定文字列のままだと、あるサイトで設定したホーム画面アイコンが他サイト（item/
-  // emote/companion/share/spirit-catalog/star-candle等）の設定まで上書きしてしまう
+  // emote/companion/share/star-candle等）の設定まで上書きしてしまう
   // （実際に競合することを確認済み）。location.pathnameの先頭セグメント
   // （例: '/tai-nomacan/' → 'tai-nomacan'）は各サイトの実際の公開URLパスと一致し、
   // リポジトリ名の変更にも自動追従するため、これをサイト識別子として使う
