@@ -118,12 +118,25 @@
   .wrap {
     position: relative;
     z-index: 1;
-    max-width: 460px;
+    max-width: 720px;
     margin: 0 auto;
     padding: 40px 20px 50px;
   }
+  /* 🖥️ デスクトップレイアウト統一: 他ツール(item/wings等)と同じ850pxブレークポイントで
+     960pxまで拡張する */
+  @media (min-width: 850px) {
+    .wrap { max-width: 960px; }
+  }
 
-  .page-head-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
+  .page-head-top {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    position: sticky; top: 0; z-index: 20;
+    margin: 0 0 12px;
+    padding: 12px 0;
+    background: var(--card-bg);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom: 0.5px solid var(--border);
+  }
   .force-refresh-btn {
     background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px;
     padding: 7px 12px; font-size: 12px; font-family: inherit; cursor: pointer; color: var(--text-dim);
@@ -505,11 +518,11 @@
   .title-chip.locked { color: var(--text-dim); opacity: 0.55; }
 
   .noma-toast {
-    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom));
+    position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom));
     transform: translateX(-50%) translateY(20px);
     background: rgba(58,46,34,0.94); color: #fff; padding: 10px 18px; border-radius: 999px;
     font-size: 13px; font-weight: 500; opacity: 0; transition: opacity .2s, transform .2s;
-    z-index: 500; pointer-events: none; max-width: 90vw; text-align: center;
+    z-index: 2000; pointer-events: none; max-width: 90vw; text-align: center;
   }
   .noma-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -714,15 +727,15 @@
   .pf-row-btn-danger { background: var(--red); color: #fff; border: none; }
 
   /* ═══ サイドバーレイアウト ═══ */
-  .app-layout { display: flex; gap: 16px; align-items: flex-start; width: 100%; }
+  .app-layout { display: flex; gap: 20px; align-items: flex-start; width: 100%; }
   .sidebar {
-    width: 180px; flex-shrink: 0; position: sticky; top: 20px; display: none;
+    width: 200px; flex-shrink: 0; position: sticky; top: 58px; display: none;
     background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; padding: 16px 14px;
     box-shadow: 0 6px 22px rgba(58,46,34,0.07);
   }
   .sidebar.sidebar-open {
     display: flex !important; flex-direction: column; position: fixed; top: 0; left: 0;
-    height: 100%; width: 250px; z-index: 500; overflow-y: auto;
+    height: 100%; width: 240px; z-index: 500; overflow-y: auto;
     border-radius: 0 18px 18px 0; box-shadow: 4px 0 30px rgba(58,46,34,0.25);
     background: #FFFDF8;
   }
@@ -772,13 +785,13 @@
 <body>
 <div class="wrap">
 
-  <div class="page-head-top">
+  <nav class="page-head-top" aria-label="ページ操作">
     <div class="head-btn-group">
       <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" data-i18n="sidebar.hamburgerToggle">☰ ツール</button>
       <button type="button" class="sidebar-toggle-btn lang-toggle-btn" id="langToggleBtn" onclick="toggleLang()">EN</button>
     </div>
     <button type="button" class="force-refresh-btn" id="forceRefreshBtn" data-i18n="header.forceRefreshBtn" data-i18n-title="header.forceRefreshTitle" title="他サイトで更新した所持通貨などが反映されない場合、リロードの代わりにこちらをお試しください">🔄 最新の状態に更新</button>
-  </div>
+  </nav>
 
   <header class="page-head">
     <div class="title-icon" aria-hidden="true"></div>
@@ -980,15 +993,10 @@
         <a href="https://taipak5000.github.io/tai-transfer/" class="sidebar-nav-link">
           🔄 <span data-i18n="tools.dataTransfer">データ引継ぎ</span>
         </a>
+        <a href="https://taipak5000.github.io/tai-info/" class="sidebar-nav-link">
+          ⚙️ <span data-i18n="tools.info">設定・更新情報</span>
+        </a>
       </nav>
-      <div style="margin-top:18px; padding-top:14px; border-top:1px solid var(--border);">
-        <div class="sidebar-section-label" data-i18n="sidebar.homeScreenIconLabel">📱 ホーム画面アイコン</div>
-        <button type="button" class="sidebar-nav-link" style="width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--cream); cursor:pointer; justify-content:center;" data-i18n="sidebar.customizeIconBtn" onclick="pfIconOpenModal()">🎨 アイコンを<br>カスタマイズ</button>
-      </div>
-      <div style="margin-top:18px; padding-top:14px; border-top:1px solid var(--border);">
-        <div class="sidebar-section-label" data-i18n="settings.sidebarLabel">⚙️ 表示設定</div>
-        <button type="button" class="sidebar-nav-link" style="width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--cream); cursor:pointer; justify-content:center;" data-i18n="settings.entryBtn" onclick="settingsOpenModal()">⚙️ 表示設定を開く</button>
-      </div>
     </aside>
 
     <div class="main-content-wrapper">
@@ -1204,8 +1212,6 @@
       hamburgerToggle: { ja: '☰ ツール', en: '☰ Tools' },
       closeBtn: { ja: '×', en: '×' },
       relatedToolsLabel: { ja: '🔗 関連ツール', en: '🔗 Related Tools' },
-      homeScreenIconLabel: { ja: '📱 ホーム画面アイコン', en: '📱 Home Screen Icon' },
-      customizeIconBtn: { ja: '🎨 アイコンを<br>カスタマイズ', en: '🎨 Customize Icon' },
       langToggleBtn: { ja: 'EN', en: '日本語' }
     },
     dock: {
@@ -1223,7 +1229,8 @@
       starCandle: { ja: '星のキャンドル計算機', en: 'Star Candle Calculator' },
       companion: { ja: '精霊同行ツール', en: 'Spirit Companion Tool' },
       wings: { ja: '羽トラッカー', en: 'Wing Tracker' },
-      dataTransfer: { ja: 'データ引継ぎ', en: 'Data Transfer' }
+      dataTransfer: { ja: 'データ引継ぎ', en: 'Data Transfer' },
+      info: { ja: '設定・更新情報', en: 'Settings & Updates' }
     },
     header: {
       title: { ja: 'ノマキャン計算機', en: 'Nomacan Calculator' },
@@ -1338,8 +1345,6 @@
       resetDone: { ja: 'デフォルトのアイコンに戻しました', en: 'Reset to the default icon.' }
     },
     settings: {
-      sidebarLabel: { ja: '⚙️ 表示設定', en: '⚙️ Display Settings' },
-      entryBtn: { ja: '⚙️ 表示設定を開く', en: 'Open Display Settings' },
       modalTitle: { ja: '⚙️ 表示設定', en: '⚙️ Display Settings' },
       displaySectionLabel: { ja: '🌙 表示', en: '🌙 Display' },
       darkModeLabel: { ja: '外観モード', en: 'Appearance' },
