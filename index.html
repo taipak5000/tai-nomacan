@@ -1300,6 +1300,7 @@
       revisitHereNow: { ja: 'が来訪中', en: ' is here now' },
       revisitReturnsIn: { ja: 'の次回来訪まで', en: ' returns in' },
       noCurrentSeasonEvent: { ja: '現在開催中の季節・イベントはありません', en: 'No current seasons or events' },
+      emptyRange: { ja: 'この期間の予定はありません', en: 'Nothing scheduled in this range' },
       eyeOfEden: { ja: '原罪', en: 'Eye of Eden' },
       labelSep: { ja: '：', en: ': ' },
       weeklyResetIn: { ja: '週間リセットまで', en: 'Weekly reset in' },
@@ -2142,6 +2143,18 @@
     var ss = String(totalSec % 60).padStart(2, '0');
     return days > 0 ? (days + t('dashboard.dayUnit') + ' ' + hh + ':' + mm + ':' + ss) : (hh + ':' + mm + ':' + ss);
   }
+  // ダッシュボードの今日/今週/今月は「項目の種類」ではなく「実際の残り時間」で振り分ける
+  // （24時間未満=今日、7日未満=今週、それ以上=今月）。以前は種類ごとに固定のセクションへ
+  // 置いていたため、例えば「終了まで2日」のイベントが今日欄に、24時間未満の「次回アップデート」が
+  // 今週欄に表示されてしまい、セクション名と中身の期間が食い違って分かりにくくなっていた。
+  function pfDashBucketFor(target) {
+    if (!target) return 'month';
+    var ms = target.getTime() - Date.now();
+    var MS_DAY = 24 * 60 * 60 * 1000, MS_WEEK = 7 * MS_DAY;
+    if (ms <= MS_DAY) return 'today';
+    if (ms <= MS_WEEK) return 'week';
+    return 'month';
+  }
   // 複数の未来時刻候補から一番近いものを選ぶ（全て過去なら null）
   function pfDashSoonestFuture(dates) {
     var now = new Date();
@@ -2232,37 +2245,46 @@
     dailyRows.push(pfDashRow('🐢', t('dashboard.turtleDarkness') + '<span class="dash-countdown">' + t('dashboard.nextEventIn') + ' ' + pfDashCountdown(pfDashNextEvenHourEvent(50)) + '</span>'));
     var dailyHtml = dailyRows.join('');
 
-    var todayRows = [];
+    // 種類（イベント/再訪/週間リセット/アップデート/シーズン終了）ではなく、各項目の実際の
+    // 残り時間で今日/今週/今月へ振り分ける。季節が「開催中」であること自体は常に今日欄に残す
+    // （カウントダウンを伴わない単なる状態表示のため、時間による振り分けの対象外）。
+    var bucketRows = { today: [], week: [], month: [] };
+    var seasonErrored = false;
     if (data.season && data.season.name && data.season.endDate && new Date() < new Date(data.season.endDate)) {
-      todayRows.push(pfDashRow('🌟', '<b>' + pfEscapeHtml(pfDashLocalizeName(data.season.name)) + '</b>' + t('dashboard.currentlyActive')));
+      bucketRows.today.push(pfDashRow('🌟', '<b>' + pfEscapeHtml(pfDashLocalizeName(data.season.name)) + '</b>' + t('dashboard.currentlyActive')));
     }
     pfDashActiveScheduledEvents(data.eventSchedule).forEach(function (ev) {
-      todayRows.push(pfDashRow('🌟', '<b>' + pfEscapeHtml(pfDashLocalizeName(ev.name)) + '</b>' + t('dashboard.currentlyActive') + '<span class="dash-countdown">' + t('dashboard.endsIn') + ' ' + pfDashCountdown(new Date(ev.end)) + '</span>'));
+      var endDate = new Date(ev.end);
+      bucketRows[pfDashBucketFor(endDate)].push(pfDashRow('🌟', '<b>' + pfEscapeHtml(pfDashLocalizeName(ev.name)) + '</b>' + t('dashboard.currentlyActive') + '<span class="dash-countdown">' + t('dashboard.endsIn') + ' ' + pfDashCountdown(endDate) + '</span>'));
     });
     var rv = pfDashRevisitStatus(data.revisit);
     if (rv && data.revisit) {
       var revisitLabel = rv.active
         ? t('dashboard.revisitSpirit') + t('dashboard.revisitHereNow')
         : t('dashboard.revisitSpirit') + t('dashboard.revisitReturnsIn');
-      todayRows.push(pfDashRow('🕊️', revisitLabel + '<span class="dash-countdown">' + pfDashCountdown(rv.target) + '</span>'));
+      bucketRows[pfDashBucketFor(rv.target)].push(pfDashRow('🕊️', revisitLabel + '<span class="dash-countdown">' + pfDashCountdown(rv.target) + '</span>'));
     }
-    var todayHtml = todayRows.length ? todayRows.join('') : '<div class="dash-empty">' + t('dashboard.noCurrentSeasonEvent') + '</div>';
-
-    var weekHtml = pfDashRow('🌩️', t('dashboard.eyeOfEden') + t('dashboard.labelSep') + t('dashboard.weeklyResetIn') + '<span class="dash-countdown">' + pfDashCountdown(pfDashNextEdenResetTarget()) + '</span><span class="dash-note">' + t('dashboard.everySundayPacific') + '</span>');
+    var edenTarget = pfDashNextEdenResetTarget();
+    bucketRows[pfDashBucketFor(edenTarget)].push(pfDashRow('🌩️', t('dashboard.eyeOfEden') + t('dashboard.labelSep') + t('dashboard.weeklyResetIn') + '<span class="dash-countdown">' + pfDashCountdown(edenTarget) + '</span><span class="dash-note">' + t('dashboard.everySundayPacific') + '</span>'));
     if (data.nextUpdate && data.nextUpdate.date) {
       var updateTarget = new Date(data.nextUpdate.date);
       if (new Date() < updateTarget) {
-        weekHtml += pfDashRow('🔧', t('dashboard.nextUpdate') + '<span class="dash-countdown">' + pfDashCountdown(updateTarget) + '</span>');
+        bucketRows[pfDashBucketFor(updateTarget)].push(pfDashRow('🔧', t('dashboard.nextUpdate') + '<span class="dash-countdown">' + pfDashCountdown(updateTarget) + '</span>'));
       }
     }
-
-    var monthHtml;
     if (data.season && data.season.endDate) {
       var end = new Date(data.season.endDate);
-      monthHtml = pfDashRow('🎨', t('dashboard.quoteOpen') + '<b>' + pfEscapeHtml(pfDashLocalizeName(data.season.name)) + '</b>' + t('dashboard.quoteClose') + t('dashboard.seasonEndsInSuffix') + '<span class="dash-countdown">' + pfDashCountdown(end) + '</span>');
+      bucketRows[pfDashBucketFor(end)].push(pfDashRow('🎨', t('dashboard.quoteOpen') + '<b>' + pfEscapeHtml(pfDashLocalizeName(data.season.name)) + '</b>' + t('dashboard.quoteClose') + t('dashboard.seasonEndsInSuffix') + '<span class="dash-countdown">' + pfDashCountdown(end) + '</span>'));
     } else {
-      monthHtml = '<div class="dash-empty">' + t('dashboard.seasonLoadFailed') + '</div>';
+      seasonErrored = true;
     }
+
+    var bucketEmptyMsg = '<div class="dash-empty">' + t('dashboard.emptyRange') + '</div>';
+    var todayHtml = bucketRows.today.length ? bucketRows.today.join('') : '<div class="dash-empty">' + t('dashboard.noCurrentSeasonEvent') + '</div>';
+    var weekHtml = bucketRows.week.length ? bucketRows.week.join('') : bucketEmptyMsg;
+    var monthHtml = seasonErrored
+      ? '<div class="dash-empty">' + t('dashboard.seasonLoadFailed') + '</div>'
+      : (bucketRows.month.length ? bucketRows.month.join('') : bucketEmptyMsg);
 
     return '<div class="dash-section"><p class="dash-section-label">' + t('dashboard.sectionDaily') + '</p>' + dailyHtml + '</div>' +
       '<div class="dash-section"><p class="dash-section-label">' + t('dashboard.sectionToday') + '</p>' + todayHtml + '</div>' +
