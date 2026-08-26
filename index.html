@@ -245,7 +245,7 @@
 
   .quick-actions-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 
-  .fill-current-btn, .survey-btn {
+  .fill-current-btn, .survey-btn, .apply-required-pace-btn {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 7px 12px;
     border: 1px solid var(--border);
@@ -263,8 +263,11 @@
   .survey-btn { color: var(--green); border-color: rgba(63,163,92,0.3); }
   .survey-btn:hover { background: rgba(63,163,92,0.08); border-color: var(--green); }
   #finishTodayBtn { margin-top: 10px; }
+  .apply-required-pace-btn { color: var(--red); border-color: rgba(184,68,37,0.3); margin-top: 8px; }
+  .apply-required-pace-btn:hover { background: rgba(184,68,37,0.08); border-color: var(--red); }
 
-  /* ═══ 目標日クイックピック（シーズン終了日・次回アップデート日） ═══ */
+  /* ═══ 目標日クイックピック（シーズン終了日・次回アップデート日・開催中イベント/再訪精霊の
+     終了日・1週間後/2週間後/1ヶ月後） ═══ */
   .date-quick-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 
   /* ═══ 実際の平均ペース提案（獲得履歴から算出） ═══ */
@@ -1394,7 +1397,12 @@
       clearSelection: { ja: '選択をクリア', en: 'Clear selection' },
       defaultGoalName: { ja: '目標', en: 'Goal' },
       presetSeasonEnd: { ja: 'シーズン終了日', en: 'Season End' },
-      presetNextUpdate: { ja: '次回アップデート日', en: 'Next Update' }
+      presetNextUpdate: { ja: '次回アップデート日', en: 'Next Update' },
+      presetEventEndTemplate: { ja: '{name}終了日', en: '{name} End' },
+      presetRevisitSpirit: { ja: '再訪精霊の来訪終了日', en: 'Traveling Spirit Departure' },
+      presetOneWeek: { ja: '1週間後', en: 'In 1 Week' },
+      presetTwoWeeks: { ja: '2週間後', en: 'In 2 Weeks' },
+      presetOneMonth: { ja: '1ヶ月後', en: 'In 1 Month' }
     },
     goalMulti: {
       barActiveSuffix: { ja: 'を編集中（タップで切替）', en: 'active (tap to switch)' },
@@ -1444,6 +1452,7 @@
       currentPaceLabelTemplate: { ja: '今のペース(1日{n}本)では　', en: 'At your current pace ({n} candles/day): ' },
       paceOk: { ja: '✓ 間に合う見込みです', en: '✓ On pace to make it in time' },
       paceWarnTemplate: { ja: '△ 1日{n}本足りません', en: "△ You're short by {n} candles/day" },
+      applyRequiredPaceBtnTemplate: { ja: '⚡ 1日{n}本のペースを設定に反映', en: '⚡ Apply {n}/day to Your Settings' },
       dailyLineTemplate: { ja: '1日あたり {n}本', en: 'Per day: {n} candles' },
       dailyLineDetailTemplate: { ja: '　(獲得 {gained}本 − ハート消費 {cost}本)', en: ' (gained {gained} candles − Heart cost {cost} candles)' },
       progressLineTemplate: { ja: '進捗 {pct}%', en: 'Progress {pct}%' },
@@ -4284,6 +4293,10 @@
       // 「今のペースでは」はスライダーで選んだ本数をそのまま基準にする(ハート消費を差し引いた
       // 実質本数は、下の内訳(dailyLine)で別途確認できる)。
       var isOnPace = dailyRate >= requiredDailyPace;
+      // 遅れている(isOnPace===false)場合、必要ペース(端数は切り上げ、スライダーと同じ0〜25本の
+      // 範囲にクランプ)をワンクリックで設定へ反映できるボタンを出す(applyRequiredPaceBtnクリック
+      // ハンドラ参照)。間に合っている場合は変更を促す必要がないため表示しない。
+      var neededPaceClamped = Math.max(0, Math.min(25, Math.ceil(requiredDailyPace)));
       html =
         '<div class="hero-stat">' + t('result.heroDailyPaceTemplate', { n: fmt(requiredDailyPace) }) + '</div>' +
         '<p class="stat-line">' + t('result.paceNeededByTemplate', { date: jpDate(targetDateObj) }) + '</p>' +
@@ -4292,7 +4305,9 @@
           t('result.currentPaceLabelTemplate', { n: fmt(dailyRate) }) +
           '<span class="' + (isOnPace ? 'pace-ok' : 'pace-warn') + '">' +
           (isOnPace ? t('result.paceOk') : t('result.paceWarnTemplate', { n: fmt(requiredDailyPace - dailyRate) })) +
-          '</span></div>' +
+          '</span>' +
+          (isOnPace ? '' : '<br><button type="button" class="apply-required-pace-btn" id="applyRequiredPaceBtn" data-pace="' + neededPaceClamped + '">' + t('result.applyRequiredPaceBtnTemplate', { n: neededPaceClamped }) + '</button>') +
+        '</div>' +
         '<p class="breakdown">' +
           dailyLine + '<br>' +
           t('result.progressLineTemplate', { pct: Math.round(progressPct) }) +
@@ -4457,6 +4472,24 @@
     });
   }
 
+  // 「必要ペースを設定に反映」ボタン(目標日から逆算して遅れている時のみ表示、update()参照):
+  // resultContentは毎回innerHTMLで再構築されるため、ボタン本体ではなく親要素に委譲する。
+  // この目標がペース個別設定(goalPaceOverride)中ならその専用入力欄へ、そうでなければ
+  // 共通スライダー(dailyRate)へ反映する(currentEffectiveDailyRateが実際に見る先と揃える)。
+  els.resultContent.addEventListener('click', function (ev) {
+    var btn = ev.target.closest ? ev.target.closest('#applyRequiredPaceBtn') : null;
+    if (!btn) return;
+    var n = parseInt(btn.getAttribute('data-pace'), 10);
+    if (!isFinite(n)) return;
+    if (els.goalPaceOverrideCheckbox && els.goalPaceOverrideCheckbox.checked) {
+      els.goalPaceOverrideInput.value = n;
+      els.goalPaceOverrideInput.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      els.dailyRate.value = n;
+      els.dailyRate.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+
   // ---- 目標日:カスタムカレンダーピッカー ----
   // ネイティブの<input type="date">はサイトのテーマに合わせて装飾できないため、
   // 値の保持だけをtargetDate(非表示)に任せ、見た目は独自のカレンダーUIで作る。
@@ -4573,11 +4606,12 @@
     if (ev.key === 'Escape') closeDatePicker();
   });
 
-  // ═══ 🗓️ 目標日クイックピック(シーズン終了日・次回アップデート日) ═══
-  // ダッシュボード(🗓️ 今日・今週・今月)が既に取得しているシーズン終了日・次回
-  // アップデート予定日を流用し、日付ピッカーを開かずワンタップで目標日に設定できるようにする。
-  // pfDashLoadData()/pfDashCache/pfDashLoadingはダッシュボード側と共有しているため、
-  // ここで先読みしておけば、後でダッシュボードを開いた時に二重フェッチにはならない。
+  // ═══ 🗓️ 目標日クイックピック(シーズン終了日・次回アップデート日・開催中イベント/再訪精霊の
+  // 終了日・1週間後/2週間後/1ヶ月後) ═══
+  // ダッシュボード(🗓️ 今日・今週・今月)が既に取得しているシーズン終了日・次回アップデート
+  // 予定日・開催中イベント一覧・再訪精霊の来訪期間を流用し、日付ピッカーを開かずワンタップで
+  // 目標日に設定できるようにする。pfDashLoadData()/pfDashCache/pfDashLoadingはダッシュボード側と
+  // 共有しているため、ここで先読みしておけば、後でダッシュボードを開いた時に二重フェッチにはならない。
   var dateQuickPresetsEl = document.getElementById('dateQuickPresets');
   function renderDateQuickPresets() {
     if (!dateQuickPresetsEl) return;
@@ -4596,6 +4630,29 @@
         presets.push({ label: t('goal.presetNextUpdate'), dateStr: formatDateValue(nu) });
       }
     }
+    // 🌟 現在開催中のイベント(複数開催中なら全て)の終了日。ダッシュボードと同じ
+    // pfDashActiveScheduledEvents/pfDashLocalizeNameで判定・翻訳するため、判定基準がずれない。
+    if (data && data.eventSchedule) {
+      pfDashActiveScheduledEvents(data.eventSchedule).forEach(function (ev) {
+        var end = new Date(ev.end);
+        if (!isNaN(end.getTime()) && end > now) {
+          presets.push({ label: t('goal.presetEventEndTemplate', { name: pfDashLocalizeName(ev.name) }), dateStr: formatDateValue(end) });
+        }
+      });
+    }
+    // 🕊️ 再訪精霊が今まさに来訪中の場合のみ、その来訪終了日(ダッシュボードのpfDashRevisitStatus参照)
+    if (data && data.revisit) {
+      var rv = pfDashRevisitStatus(data.revisit);
+      if (rv && rv.active && rv.target && rv.target > now) {
+        presets.push({ label: t('goal.presetRevisitSpirit'), dateStr: formatDateValue(rv.target) });
+      }
+    }
+    // 📅 シーズン・イベント情報の取得有無に関わらず常に選べる、相対日数の候補
+    presets.push({ label: t('goal.presetOneWeek'), dateStr: formatDateValue(new Date(now.getTime() + 7 * 86400000)) });
+    presets.push({ label: t('goal.presetTwoWeeks'), dateStr: formatDateValue(new Date(now.getTime() + 14 * 86400000)) });
+    var oneMonthLater = new Date(now);
+    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+    presets.push({ label: t('goal.presetOneMonth'), dateStr: formatDateValue(oneMonthLater) });
     dateQuickPresetsEl.innerHTML = presets.map(function (p) {
       return '<button type="button" class="fill-current-btn date-quick-preset-btn" data-date="' + p.dateStr + '">📅 ' + pfEscapeHtml(p.label) + '</button>';
     }).join('');
@@ -4610,6 +4667,12 @@
     });
   }
   function initDateQuickPresets() {
+    // 1週間後/2週間後/1ヶ月後などの相対候補はフェッチ不要のため、まず即座に描画する
+    // (シーズン終了日・次回アップデート等のフェッチ済み候補が無くても、他の候補まで
+    // 表示されなくなることがないようにするため。ダッシュボードのシーズン取得失敗時の
+    // 教訓と同じ考え方)。フェッチが成功したら、season/nextUpdate/イベント/再訪精霊を
+    // 追加した内容で再描画する。
+    renderDateQuickPresets();
     if (!pfDashLoading) pfDashLoading = pfDashLoadData();
     pfDashLoading.then(function (data) {
       pfDashCache = data;
