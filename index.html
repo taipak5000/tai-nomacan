@@ -2171,22 +2171,38 @@
     return future.length ? future[0] : null;
   }
   function pfDashRevisitStatus(schedule) {
-    if (!schedule || !schedule.anchorStart || !schedule.anchorEnd) return null;
-    var start0 = new Date(schedule.anchorStart);
-    var end0 = new Date(schedule.anchorEnd);
-    var intervalMs = schedule.intervalDays * 86400000;
+    if (!schedule) return null;
     var now = new Date();
-    var k = Math.floor((now - start0) / intervalMs);
-    var start = new Date(start0.getTime() + k * intervalMs);
-    var end = new Date(start.getTime() + (end0 - start0));
-    if (start <= now && now <= end) return { active: true, daysLeft: Math.ceil((end - now) / 86400000), target: end };
-    var nextStart = now < start ? start : new Date(start.getTime() + intervalMs);
-    return { active: false, daysUntil: Math.ceil((nextStart - now) / 86400000), target: nextStart };
+    if (schedule.intervalDays) {
+      if (!schedule.anchorStart || !schedule.anchorEnd) return null;
+      var start0 = new Date(schedule.anchorStart);
+      var end0 = new Date(schedule.anchorEnd);
+      var intervalMs = schedule.intervalDays * 86400000;
+      var k = Math.floor((now - start0) / intervalMs);
+      var start = new Date(start0.getTime() + k * intervalMs);
+      var end = new Date(start.getTime() + (end0 - start0));
+      if (start <= now && now <= end) return { active: true, daysLeft: Math.ceil((end - now) / 86400000), target: end };
+      var nextStart = now < start ? start : new Date(start.getTime() + intervalMs);
+      return { active: false, daysUntil: Math.ceil((nextStart - now) / 86400000), target: nextStart };
+    }
+    // 一回限りの来訪（intervalDaysなし）：start/endで判定し、終了済みなら二度と表示しない
+    if (!schedule.start || !schedule.end) return null;
+    var start2 = new Date(schedule.start), end2 = new Date(schedule.end);
+    if (start2 <= now && now <= end2) return { active: true, daysLeft: Math.ceil((end2 - now) / 86400000), target: end2 };
+    if (now < start2) return { active: false, daysUntil: Math.ceil((start2 - now) / 86400000), target: start2 };
+    return null;
+  }
+  // 複数の来訪(周期的な単独の旅の精霊・期間限定の来訪団など)が同時に進行することがあるため、
+  // それぞれの状態をまとめて計算する
+  function pfDashRevisitStatuses(schedules) {
+    return (schedules || []).map(function (schedule) {
+      return { schedule: schedule, status: pfDashRevisitStatus(schedule) };
+    }).filter(function (x) { return x.status; });
   }
   function pfDashLoadData() {
     return fetch(location.origin + '/tai-item/index.html').then(function (res) { return res.text(); }).then(function (html) {
       return {
-        revisit: pfExtractArray(html, 'REVISIT_SPIRIT_SCHEDULE') || null,
+        revisitSchedules: pfExtractArray(html, 'REVISIT_SPIRIT_SCHEDULES') || [],
         season: pfExtractArray(html, 'CURRENT_SEASON') || null,
         eventSchedule: pfExtractArray(html, 'EVENT_SCHEDULE') || [],
         nextUpdate: pfExtractArray(html, 'NEXT_UPDATE') || null,
@@ -2266,13 +2282,13 @@
       var endDate = new Date(ev.end);
       bucketRows[pfDashBucketFor(endDate)].push(pfDashRow('🌟', '<b>' + pfEscapeHtml(pfDashLocalizeName(ev.name)) + '</b>' + t('dashboard.currentlyActive') + '<span class="dash-countdown">' + t('dashboard.endsIn') + ' ' + pfDashCountdown(endDate) + '</span>'));
     });
-    var rv = pfDashRevisitStatus(data.revisit);
-    if (rv && data.revisit) {
+    pfDashRevisitStatuses(data.revisitSchedules).forEach(function (entry) {
+      var rv = entry.status;
       var revisitLabel = rv.active
         ? t('dashboard.revisitSpirit') + t('dashboard.revisitHereNow')
         : t('dashboard.revisitSpirit') + t('dashboard.revisitReturnsIn');
       bucketRows[pfDashBucketFor(rv.target)].push(pfDashRow('🕊️', revisitLabel + '<span class="dash-countdown">' + pfDashCountdown(rv.target) + '</span>'));
-    }
+    });
     var edenTarget = pfDashNextEdenResetTarget();
     bucketRows[pfDashBucketFor(edenTarget)].push(pfDashRow('🌩️', t('dashboard.eyeOfEden') + t('dashboard.labelSep') + t('dashboard.weeklyResetIn') + '<span class="dash-countdown">' + pfDashCountdown(edenTarget) + '</span><span class="dash-note">' + t('dashboard.everySundayPacific') + '</span>'));
     if (data.nextUpdate && data.nextUpdate.date) {
@@ -4641,11 +4657,13 @@
       });
     }
     // 🕊️ 再訪精霊が今まさに来訪中の場合のみ、その来訪終了日(ダッシュボードのpfDashRevisitStatus参照)
-    if (data && data.revisit) {
-      var rv = pfDashRevisitStatus(data.revisit);
-      if (rv && rv.active && rv.target && rv.target > now) {
-        presets.push({ label: t('goal.presetRevisitSpirit'), dateStr: formatDateValue(rv.target) });
-      }
+    if (data && data.revisitSchedules) {
+      pfDashRevisitStatuses(data.revisitSchedules).forEach(function (entry) {
+        var rv = entry.status;
+        if (rv.active && rv.target && rv.target > now) {
+          presets.push({ label: t('goal.presetRevisitSpirit'), dateStr: formatDateValue(rv.target) });
+        }
+      });
     }
     // 📅 シーズン・イベント情報の取得有無に関わらず常に選べる、相対日数の候補
     presets.push({ label: t('goal.presetOneWeek'), dateStr: formatDateValue(new Date(now.getTime() + 7 * 86400000)) });
