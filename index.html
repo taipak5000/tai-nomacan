@@ -755,6 +755,8 @@
   }
   .sidebar-nav-link:hover { background: var(--cream); }
   .sidebar-nav-link.current-tool { background: rgba(232,133,10,0.12); color: var(--amber-deep); font-weight: 700; }
+  /* 精度に不安がある新機能であることを示す小さな注記（例: 楽譜づくり） */
+  .tool-badge-test { font-size: 9px; font-weight: 700; color: var(--text); opacity: 0.55; text-transform: uppercase; letter-spacing: 0.3px; }
   .sidebar-toggle-btn {
     background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 7px 14px;
     font-size: 13px; font-family: inherit; cursor: pointer; color: var(--text);
@@ -999,6 +1001,9 @@
         <a href="https://taipak5000.github.io/wings/" class="sidebar-nav-link">
           🪽 <span data-i18n="tools.wings">羽トラッカー</span>
         </a>
+        <a href="https://taipak5000.github.io/tai-score/" class="sidebar-nav-link">
+          <span class="tool-badge-test">test</span>🎵 <span data-i18n="tools.score">楽譜づくり</span>
+        </a>
         <a href="https://taipak5000.github.io/tai-transfer/" class="sidebar-nav-link">
           🔄 <span data-i18n="tools.dataTransfer">データ引継ぎ</span>
         </a>
@@ -1238,6 +1243,7 @@
       starCandle: { ja: '星のキャンドル計算機', en: 'Star Candle Calculator' },
       companion: { ja: '精霊同行ツール', en: 'Spirit Companion Tool' },
       wings: { ja: '羽トラッカー', en: 'Wing Tracker' },
+      score: { ja: '楽譜づくり', en: 'Sheet Music Maker' },
       dataTransfer: { ja: 'データ引継ぎ', en: 'Data Transfer' },
       info: { ja: '設定・更新情報', en: 'Settings & Updates' }
     },
