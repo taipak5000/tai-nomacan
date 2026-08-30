@@ -183,6 +183,21 @@
 
   .subtitle { color: var(--text-dim); font-size: 13.5px; margin: 0; }
 
+  /* ═══ 🎉 「1年前の今日」お知らせバナー ═══ */
+  .one-year-ago-banner {
+    display: none; align-items: center; gap: 10px;
+    margin: 0 0 18px; padding: 10px 14px; border-radius: 12px;
+    background: var(--cream); border: 1px solid var(--amber-light);
+    font-size: 13px; color: var(--text); line-height: 1.6; text-align: left;
+  }
+  .one-year-ago-banner.is-visible { display: flex; }
+  .one-year-ago-text { flex: 1; min-width: 0; }
+  .one-year-ago-close-btn {
+    background: none; border: none; font-size: 18px; cursor: pointer;
+    color: var(--text-dim); padding: 0 2px; line-height: 1; flex-shrink: 0;
+  }
+  .one-year-ago-close-btn:hover { color: var(--amber-deep); }
+
   .card {
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -833,6 +848,11 @@
     <h1 data-i18n="header.title">ノマキャン計算機</h1>
     <p class="subtitle" data-i18n="header.subtitle">Sky 星を紡ぐ子どもたち・目標本数まであと何日？</p>
   </header>
+
+  <!-- ▸ 🎉「1年前の今日」お知らせバナー: 獲得履歴・デイリークエスト記録のいずれかに
+       ちょうど1年前の同じ月日のエントリがあれば表示する。閉じるボタンで当日中は
+       再表示しないようにできる(renderOneYearAgoBanner()参照)。 -->
+  <div class="one-year-ago-banner" id="oneYearAgoBanner" role="status" aria-live="polite"></div>
 
   <div class="pf-bar" id="pfBar"></div>
 
@@ -1564,6 +1584,12 @@
       confirmClear: { ja: 'デイリークエストの記録をすべて消去します。よろしいですか？', en: 'This will clear all daily quest logs. Are you sure?' },
       empty: { ja: 'まだ記録はありません。今日やったデイリークエストを書いて保存してみましょう。', en: "No logs yet. Try writing down today's daily quests and saving them." }
     },
+    oneYearAgo: {
+      historyTemplate: { ja: '🎉 1年前の今日、獲得履歴に「{label}」を記録していました', en: '🎉 One year ago today, you logged "{label}" in your History' },
+      questTemplate: { ja: '🎉 1年前の今日、デイリークエストに「{text}」を記録していました', en: '🎉 One year ago today, you logged "{text}" in your Daily Quest Log' },
+      bothText: { ja: '🎉 1年前の今日、獲得履歴とデイリークエストの両方に記録していました', en: '🎉 One year ago today, you logged entries in both your History and your Daily Quest Log' },
+      dismissBtn: { ja: '閉じる', en: 'Dismiss' }
+    },
     titles: {
       heading: { ja: '🏆 称号', en: '🏆 Titles' },
       countTemplate: { ja: '{earned} / {total} 個解除', en: '{earned} / {total} unlocked' },
@@ -1667,6 +1693,7 @@
     if (typeof renderTitles === 'function') renderTitles();
     if (typeof renderQuestLog === 'function') renderQuestLog();
     if (typeof renderQuestStreak === 'function') renderQuestStreak();
+    if (typeof renderOneYearAgoBanner === 'function') renderOneYearAgoBanner();
     updateLangButtonsUI();
   }
   // 従来の2言語トグル(既存のヘッダーの言語切替ボタン等から利用)。setLang()を使って実装。
@@ -4225,6 +4252,86 @@
   }
 
   /* ================================================================
+     🎉 「1年前の今日」お知らせバナー
+     📜獲得履歴(HISTORY_STORAGE_KEY)と🗒️デイリークエスト記録(QUEST_LOG_KEY)の
+     どちらか一方でも、今日とちょうど同じ月日(年は問わない過去)のエントリが
+     あればページ読み込み時に気づけるよう、小さく閉じられるバナーで知らせる。
+     「今日」の判定は🔥ストリークと同じ考え方(streakDateStr、ブラウザのローカル日付。
+     historyTimeLabel()のようなAsia/Tokyo固定はここでは使わない。あちらは表示専用の
+     整形であり、「今日」という日付境界そのものはstreak/questログ側の流儀に合わせる)。
+     閉じるボタンを押した日付をnsKey()で(プロフィールごとに)覚えておき、同じ日のうちは
+     再表示しない。翌日以降(かつ今日と同じ月日に該当するエントリが引き続きあれば)は
+     再び表示される。
+     ================================================================ */
+  var ONE_YEAR_AGO_DISMISS_KEY = nsKey('oneYearAgoBannerDismissedDate_v1');
+  // 長文になりがちな自由記述(デイリークエスト記録)をバナー内に収まる長さへ短縮する
+  function oneYearAgoTruncate(text, max) {
+    if (!text) return '';
+    return text.length > max ? text.slice(0, max) + '…' : text;
+  }
+  // 獲得履歴から、月日が今日と一致し年が今年より前のものを探す(新しい順に走査するため
+  // 最初に見つかったものが最も直近の一致になる)。
+  function findOneYearAgoHistoryEntry(today) {
+    var list = loadHistory();
+    for (var i = 0; i < list.length; i++) {
+      var d = new Date(list[i].time);
+      if (d.getMonth() === today.getMonth() && d.getDate() === today.getDate() && d.getFullYear() < today.getFullYear()) {
+        return list[i];
+      }
+    }
+    return null;
+  }
+  // デイリークエスト記録から同様に探す(dateは'YYYY-MM-DD'文字列なのでcomputeHeatmapRange等と
+  // 同じ手順でDateへ戻さず、文字列のまま年月日を取り出して比較する)。
+  function findOneYearAgoQuestEntry(today) {
+    var list = loadQuestLog();
+    for (var i = 0; i < list.length; i++) {
+      var p = list[i].date.split('-');
+      var y = Number(p[0]), m = Number(p[1]) - 1, dNum = Number(p[2]);
+      if (m === today.getMonth() && dNum === today.getDate() && y < today.getFullYear()) {
+        return list[i];
+      }
+    }
+    return null;
+  }
+  function renderOneYearAgoBanner() {
+    var wrap = document.getElementById('oneYearAgoBanner');
+    if (!wrap) return;
+    var today = new Date();
+    var todayStr = streakDateStr(today);
+    var dismissedDate = null;
+    try { dismissedDate = localStorage.getItem(ONE_YEAR_AGO_DISMISS_KEY); } catch (e) { /* noop */ }
+    if (dismissedDate === todayStr) { wrap.classList.remove('is-visible'); wrap.innerHTML = ''; return; }
+    var historyEntry = findOneYearAgoHistoryEntry(today);
+    var questEntry = findOneYearAgoQuestEntry(today);
+    if (!historyEntry && !questEntry) { wrap.classList.remove('is-visible'); wrap.innerHTML = ''; return; }
+    var msg;
+    if (historyEntry && questEntry) {
+      msg = t('oneYearAgo.bothText');
+    } else if (historyEntry) {
+      var label = historyEntry.labelKey ? t(historyEntry.labelKey) : (historyEntry.label || '');
+      msg = t('oneYearAgo.historyTemplate', { label: pfEscapeHtml(label) });
+    } else {
+      msg = t('oneYearAgo.questTemplate', { text: pfEscapeHtml(oneYearAgoTruncate(questEntry.text, 30)) });
+    }
+    wrap.innerHTML = '<span class="one-year-ago-text">' + msg + '</span>' +
+      '<button type="button" class="one-year-ago-close-btn" aria-label="' + pfEscapeHtml(t('oneYearAgo.dismissBtn')) + '">×</button>';
+    wrap.classList.add('is-visible');
+  }
+  // 閉じるボタンはrenderOneYearAgoBanner()のたびにinnerHTMLごと作り直されるため、
+  // ボタン自体にではなく親要素(wrap)にイベント委任する(history-undo-btn等と同じ流儀)。
+  var oneYearAgoWrap = document.getElementById('oneYearAgoBanner');
+  if (oneYearAgoWrap) {
+    oneYearAgoWrap.addEventListener('click', function (ev) {
+      var btn = ev.target.closest ? ev.target.closest('.one-year-ago-close-btn') : null;
+      if (!btn) return;
+      try { localStorage.setItem(ONE_YEAR_AGO_DISMISS_KEY, streakDateStr(new Date())); } catch (e) { /* noop */ }
+      oneYearAgoWrap.classList.remove('is-visible');
+      oneYearAgoWrap.innerHTML = '';
+    });
+  }
+
+  /* ================================================================
      🏆 称号(実績)
      ストリークの最長記録(streak.longest、上ですでにHWM化済み)と、所持本数の
      過去最高値(currentMax、ここでMath.max()により保持)の2軸で判定する。
@@ -4984,6 +5091,7 @@
   questLogPrefillToday();
   renderQuestLog();
   renderQuestStreak();
+  renderOneYearAgoBanner();
 })();
 </script>
 </body>
