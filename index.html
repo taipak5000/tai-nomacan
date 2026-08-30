@@ -572,6 +572,30 @@
   }
   .history-clear-btn:hover { color: var(--red); }
 
+  /* ═══ 🗒️ デイリークエスト記録(獲得履歴・ストリークと同じ「日付ログ」の仕組みを流用。
+     ただし各エントリは差分ではなく自由記述のテキストなので、履歴の
+     .history-row/.history-main/.history-time等のレイアウトはそのまま再利用しつつ、
+     1行省略(.history-label)ではなく複数行そのまま折り返す専用の文字クラスを別途用意する) ═══ */
+  .quest-log-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--cream);
+    color: var(--text);
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    outline: none;
+    resize: vertical;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .quest-log-textarea:focus {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(232,133,10,0.16);
+  }
+  .quest-log-text { font-size: 13px; color: var(--text); white-space: pre-wrap; word-break: break-word; line-height: 1.7; }
+
   /* opacity: 0.85 は付けない — --text-dim を薄める形になり、ライトモードでの
      実際の描画結果（背景色とのアルファ合成後の色）で計算すると再び4.5:1を
      下回ってしまうため（WCAG AAコントラスト比の対応。上記 --text-dim のコメント参照）。 */
@@ -1166,6 +1190,28 @@
     </div>
   </section>
 
+  <!-- ▸ 🗒️ デイリークエスト記録: 毎日ローテーションするデイリークエスト(3〜4個、
+       ゲーム内では24時間しか見えない)は文言自体をこのアプリでは扱わず、ユーザーが
+       自由記述で「今日やったこと」を書き留める日記のような機能。上の📜獲得履歴・
+       🔥ストリークと同じ「日付ログ+ストリーク」の仕組みを流用するが、混同を避ける
+       ためstorage key・i18nキーとも完全に独立させた別セクションにする。 -->
+  <section class="card">
+    <h2 data-i18n="dailyQuest.heading">🗒️ デイリークエスト記録</h2>
+    <div class="streak-strip" id="questStreakStrip"></div>
+    <div class="field">
+      <label for="questLogInput" data-i18n="dailyQuest.inputLabel">今日やったデイリークエスト</label>
+      <textarea id="questLogInput" class="quest-log-textarea" rows="3" data-i18n-placeholder="dailyQuest.inputPlaceholder" placeholder="例: 光の翼を集めた、キャンドルを配った、精霊と一緒に座った"></textarea>
+      <p class="field-hint" data-i18n="dailyQuest.inputHint">今日終わらせたデイリークエストを自由に書き留めておけます。同じ日にもう一度保存すると、その日の内容が上書きされます。</p>
+      <button type="button" class="fill-current-btn" id="questLogSaveBtn" data-i18n="dailyQuest.saveBtn">📝 今日の記録を保存</button>
+    </div>
+    <hr class="divider">
+    <div class="history-list" id="questLogList"></div>
+    <div class="history-footer">
+      <p class="note" data-i18n="dailyQuest.note">保存すると1日ごとに1件、記録として残ります(最大50日分)。</p>
+      <button type="button" class="history-clear-btn" id="questLogClearBtn" data-i18n="dailyQuest.clearBtn">記録を全て消去</button>
+    </div>
+  </section>
+
     </div> <!-- /.main-content-wrapper -->
   </div> <!-- /.app-layout -->
 
@@ -1506,6 +1552,18 @@
       heatmapCellRecordedTemplate: { ja: '{date}：記録あり', en: '{date}: Recorded' },
       heatmapCellEmptyTemplate: { ja: '{date}：記録なし', en: '{date}: No record' }
     },
+    dailyQuest: {
+      heading: { ja: '🗒️ デイリークエスト記録', en: '🗒️ Daily Quest Log' },
+      inputLabel: { ja: '今日やったデイリークエスト', en: "Today's daily quests" },
+      inputPlaceholder: { ja: '例: 光の翼を集めた、キャンドルを配った、精霊と一緒に座った', en: 'e.g. Collected wax, gave candles, sat with a spirit' },
+      inputHint: { ja: '今日終わらせたデイリークエストを自由に書き留めておけます。同じ日にもう一度保存すると、その日の内容が上書きされます。', en: "Jot down whatever daily quests you finished today, in your own words. Saving again on the same day overwrites that day's entry." },
+      saveBtn: { ja: '📝 今日の記録を保存', en: "📝 Save Today's Log" },
+      note: { ja: '保存すると1日ごとに1件、記録として残ります(最大50日分)。', en: "Saving keeps one entry per day (up to 50 days)." },
+      streakEmptyText: { ja: '📅 記録するとストリークが貯まります。今日やったデイリークエストを書いてみましょう。', en: "📅 Start logging to build a streak — try writing down today's daily quests." },
+      clearBtn: { ja: '記録を全て消去', en: 'Clear all logs' },
+      confirmClear: { ja: 'デイリークエストの記録をすべて消去します。よろしいですか？', en: 'This will clear all daily quest logs. Are you sure?' },
+      empty: { ja: 'まだ記録はありません。今日やったデイリークエストを書いて保存してみましょう。', en: "No logs yet. Try writing down today's daily quests and saving them." }
+    },
     titles: {
       heading: { ja: '🏆 称号', en: '🏆 Titles' },
       countTemplate: { ja: '{earned} / {total} 個解除', en: '{earned} / {total} unlocked' },
@@ -1607,6 +1665,8 @@
     if (typeof renderStreak === 'function') renderStreak();
     if (typeof renderStreakHeatmap === 'function') renderStreakHeatmap();
     if (typeof renderTitles === 'function') renderTitles();
+    if (typeof renderQuestLog === 'function') renderQuestLog();
+    if (typeof renderQuestStreak === 'function') renderQuestStreak();
     updateLangButtonsUI();
   }
   // 従来の2言語トグル(既存のヘッダーの言語切替ボタン等から利用)。setLang()を使って実装。
@@ -1902,7 +1962,7 @@
       // 既定プロフィールを削除する場合は、nsKey()が接尾辞なしで返すこのファイル内の
       // 既知キーを個別に対象へ追加する。
       if (id === DEFAULT_PROFILE_ID) {
-        ['wishOwnCurrency', 'skyCurrencyExtra_v1', 'skyNomacanGoals_v1', 'skyNomacanCalc_v1', 'skyNomacanCalc_history_v1'].forEach(function (rawKey) {
+        ['wishOwnCurrency', 'skyCurrencyExtra_v1', 'skyNomacanGoals_v1', 'skyNomacanCalc_v1', 'skyNomacanCalc_history_v1', 'dailyQuestLog_v1', 'dailyQuestStreak_v1'].forEach(function (rawKey) {
           if (toRemove.indexOf(rawKey) === -1) toRemove.push(rawKey);
         });
       }
@@ -4006,6 +4066,165 @@
   }
 
   /* ================================================================
+     🗒️ デイリークエスト記録(獲得履歴の「日付ログ+ストリーク」の仕組みをそのまま流用)
+     Skyのデイリークエストは日替わりで内容が変わり(1日3〜4個、ゲーム内では24時間しか
+     見えない)、このアプリはクエスト名そのものをデータとして持たないため、ユーザーが
+     自由記述で「今日やったこと」を書き留める日記のような形にする。
+     ストレージは獲得履歴と完全に分離した専用キー2つ(下記QUEST_LOG_KEY/questStreakKey)を
+     nsKey()で持つ。ストリークの算出は、上の🔥ストリークで定義済みの共通関数
+     (streakDateStr/streakAddDays/streakRunEndingAt。特定のstorage keyに依存しない
+     純粋な日付計算)をそのまま呼び出し、記録の保存先(days/longestの読み書き先)だけを
+     questStreakKey()に差し替えることで、streakRecordToday/streakCurrentLive/
+     renderStreakと"同じ構造"を保ったまま別ログとして扱う(似て非なる第二の実装を
+     書き下ろさないため)。
+     ================================================================ */
+  var QUEST_LOG_KEY = nsKey('dailyQuestLog_v1');
+  var QUEST_LOG_MAX_ENTRIES = 50;
+  function loadQuestLog() {
+    try {
+      var raw = window.localStorage.getItem(QUEST_LOG_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      return Object.prototype.toString.call(list) === '[object Array]' ? list : [];
+    } catch (err) { return []; }
+  }
+  function saveQuestLog(list) {
+    try { window.localStorage.setItem(QUEST_LOG_KEY, JSON.stringify(list)); } catch (err) { /* no-op */ }
+  }
+  // 'YYYY-MM-DD'文字列をjpDateShort()に渡せるDateへ戻す(computeHeatmapRangeと同じ手順の
+  // 素朴なパース。streakAddDays()自体は「差分を足した後のdateStrを返す」関数であり
+  // Dateを返さないため、表示用にはここで同じ手順を踏む)。
+  function questDateLabel(dateStr) {
+    var p = dateStr.split('-');
+    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    return jpDateShort(d);
+  }
+  // 今日の分を保存する。同じ日にすでにエントリがあれば(テキストの上書き編集として)
+  // 新規行を増やさずその場で更新し、なければ新規行として先頭に追加した上で
+  // 最大件数(QUEST_LOG_MAX_ENTRIES)を超えた古い分を切り捨てる(addHistoryEntry()と同じ形)。
+  function questLogSave() {
+    var input = document.getElementById('questLogInput');
+    var text = ((input && input.value) || '').trim();
+    if (!text) return;
+    var today = streakDateStr(new Date());
+    var list = loadQuestLog();
+    var existing = null;
+    for (var i = 0; i < list.length; i++) { if (list[i].date === today) { existing = list[i]; break; } }
+    if (existing) {
+      existing.text = text;
+      existing.time = Date.now();
+    } else {
+      list.unshift({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        date: today,
+        time: Date.now(),
+        text: text
+      });
+      if (list.length > QUEST_LOG_MAX_ENTRIES) list = list.slice(0, QUEST_LOG_MAX_ENTRIES);
+    }
+    saveQuestLog(list);
+    renderQuestLog();
+    // 🔥 ストリークは「記録した」こと自体を数えるためのもので、同日内の編集回数には
+    // 依存しない(questStreakRecordToday側で当日分はすでに記録済みかどうかをチェック済み)。
+    questStreakRecordToday();
+    renderQuestStreak();
+  }
+  function renderQuestLog() {
+    var el = document.getElementById('questLogList');
+    if (!el) return;
+    var list = loadQuestLog();
+    var html;
+    if (list.length === 0) {
+      html = '<p class="history-empty">' + t('dailyQuest.empty') + '</p>';
+    } else {
+      html = list.map(function (entry) {
+        return '<div class="history-row">' +
+          '<div class="history-main">' +
+            '<span class="history-time">' + questDateLabel(entry.date) + '</span>' +
+            '<span class="quest-log-text">' + pfEscapeHtml(entry.text) + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+    el.innerHTML = html;
+  }
+  // ページ読み込み時、今日の分がすでに保存済みならテキストエリアへ表示する
+  // (「今日はもう書いたっけ?」を思い出させ、そのまま追記・修正できるようにするため)。
+  function questLogPrefillToday() {
+    var input = document.getElementById('questLogInput');
+    if (!input) return;
+    var today = streakDateStr(new Date());
+    var list = loadQuestLog();
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].date === today) { input.value = list[i].text; break; }
+    }
+  }
+
+  // ═══ 🔥 デイリークエスト専用ストリーク ═══
+  // 上の🔥ストリーク(streakKey/loadStreak/saveStreak/streakRecordToday/streakCurrentLive/
+  // renderStreak)と関数の構造は完全に同じだが、保存先(questStreakKey())が
+  // 獲得履歴のストリーク(skyNomacanStreak_v1)とは別のnsKeyになっている点だけが異なる。
+  // 日付計算そのもの(streakDateStr/streakAddDays/streakRunEndingAt)は上で定義済みの
+  // 共通関数をそのまま呼び出し、ここでは再実装しない。
+  function questStreakKey() { return nsKey('dailyQuestStreak_v1'); } // { days:{'YYYY-MM-DD':1,...}, longest:number }
+  function loadQuestStreak() {
+    try {
+      var d = JSON.parse(localStorage.getItem(questStreakKey()));
+      if (d && typeof d === 'object') return { days: d.days || {}, longest: d.longest || 0 };
+    } catch (e) { /* 破損データは初期状態として扱う */ }
+    return { days: {}, longest: 0 };
+  }
+  function saveQuestStreak(s) {
+    try { localStorage.setItem(questStreakKey(), JSON.stringify(s)); } catch (e) { /* noop */ }
+  }
+  // questLogSave()から呼ばれる。今日をまだ記録していなければ記録し、
+  // 最長ストリーク(longest)をMath.max()でのみ更新する(後から縮まない)。
+  function questStreakRecordToday() {
+    var s = loadQuestStreak();
+    var today = streakDateStr(new Date());
+    if (!s.days[today]) {
+      s.days[today] = 1;
+      s.longest = Math.max(s.longest, streakRunEndingAt(s.days, today));
+      saveQuestStreak(s);
+    }
+    return s;
+  }
+  // 表示用の「今つながっている」ストリーク。最終記録日が今日か昨日なら継続中とみなし、
+  // それより前で途切れていれば0(=表示上は途切れている)を返す(streakCurrentLiveと同じ判定)。
+  function questStreakCurrentLive(s) {
+    var today = streakDateStr(new Date());
+    if (s.days[today]) return streakRunEndingAt(s.days, today);
+    var yesterday = streakAddDays(today, -1);
+    if (s.days[yesterday]) return streakRunEndingAt(s.days, yesterday);
+    return 0;
+  }
+  function renderQuestStreak() {
+    var el = document.getElementById('questStreakStrip');
+    if (!el) return;
+    var s = loadQuestStreak();
+    var live = questStreakCurrentLive(s);
+    var bestSuffix = s.longest > 0 ? t('streak.bestSuffixTemplate', { n: s.longest }) : '';
+    if (live > 0) {
+      el.classList.remove('is-empty');
+      el.innerHTML = '<span class="streak-main">' + t('streak.activeTemplate', { n: live }) + '</span>' +
+        (s.longest > live ? '<span>' + bestSuffix + '</span>' : '');
+    } else {
+      el.classList.add('is-empty');
+      el.innerHTML = '<span>' + t('dailyQuest.streakEmptyText') + '</span>' + (s.longest > 0 ? '<span>' + bestSuffix + '</span>' : '');
+    }
+  }
+
+  var questLogSaveBtn = document.getElementById('questLogSaveBtn');
+  if (questLogSaveBtn) questLogSaveBtn.addEventListener('click', questLogSave);
+  var questLogClearBtn = document.getElementById('questLogClearBtn');
+  if (questLogClearBtn) {
+    questLogClearBtn.addEventListener('click', function () {
+      if (!window.confirm(t('dailyQuest.confirmClear'))) return;
+      saveQuestLog([]);
+      renderQuestLog();
+    });
+  }
+
+  /* ================================================================
      🏆 称号(実績)
      ストリークの最長記録(streak.longest、上ですでにHWM化済み)と、所持本数の
      過去最高値(currentMax、ここでMath.max()により保持)の2軸で判定する。
@@ -4762,6 +4981,9 @@
   renderStreak();
   renderStreakHeatmap();
   refreshTitlesUI(); // 既存ユーザーの所持本数がすでに閾値を超えている場合の追いつき判定も兼ねる
+  questLogPrefillToday();
+  renderQuestLog();
+  renderQuestStreak();
 })();
 </script>
 </body>
