@@ -830,6 +830,16 @@
   .site-dock .site-dock-icon { font-size: 20px; line-height: 1; }
   .site-dock .site-dock-label { font-size: 10px; font-weight: 700; color: var(--text-dim);
     max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* 🔴 ダッシュボードボタンの「まもなく終了」インジケーター（季節/イベント終了が3日以内の
+     ときだけ表示する小さな赤丸）。既存の再取得済みダッシュボードデータ(pfDashCache)を
+     流用するだけで、新規fetchは行わない（pfDashUpdateUrgentBadge()参照）。 */
+  .site-dock .site-dock-icon-wrap { position: relative; display: inline-flex; }
+  .site-dock .dock-urgent-dot {
+    display: none; position: absolute; top: -2px; right: -6px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--red); border: 1.5px solid var(--card-bg);
+  }
+  .site-dock .dock-urgent-dot.show { display: block; }
 </style>
 </head>
 <body>
@@ -1257,7 +1267,10 @@
       <span class="site-dock-label" id="siteDockProfileLabel">プロフィール</span>
     </button>
     <button type="button" onclick="pfDashOpen()">
-      <span class="site-dock-icon" aria-hidden="true">🗓️</span>
+      <span class="site-dock-icon-wrap">
+        <span class="site-dock-icon" aria-hidden="true">🗓️</span>
+        <span class="dock-urgent-dot" id="dockUrgentDot" aria-hidden="true" title="季節/イベントの終了が近づいています" data-i18n-title="dock.urgentTitle"></span>
+      </span>
       <span class="site-dock-label" data-i18n="dock.dashboard">ダッシュボード</span>
     </button>
     <button type="button" onclick="openSidebar()">
@@ -1302,7 +1315,8 @@
       profile: { ja: 'プロフィール', en: 'Profiles' },
       dashboard: { ja: 'ダッシュボード', en: 'Dashboard' },
       tools: { ja: 'ツール', en: 'Tools' },
-      settings: { ja: '表示設定', en: 'Display' }
+      settings: { ja: '表示設定', en: 'Display' },
+      urgentTitle: { ja: '季節/イベントの終了が近づいています', en: 'A season or event is ending soon' }
     },
     tools: {
       item: { ja: 'アイテム所持管理', en: 'Item Collection' },
@@ -1694,6 +1708,7 @@
     if (typeof renderQuestLog === 'function') renderQuestLog();
     if (typeof renderQuestStreak === 'function') renderQuestStreak();
     if (typeof renderOneYearAgoBanner === 'function') renderOneYearAgoBanner();
+    if (typeof pfDashUpdateUrgentBadge === 'function') pfDashUpdateUrgentBadge();
     updateLangButtonsUI();
   }
   // 従来の2言語トグル(既存のヘッダーの言語切替ボタン等から利用)。setLang()を使って実装。
@@ -2429,6 +2444,7 @@
       if (!pfDashCache) return;
       var body = document.getElementById('dashBody');
       if (body) body.innerHTML = pfDashBuildHtml(pfDashCache);
+      pfDashUpdateUrgentBadge();
     }, 1000);
   }
   function pfDashStopTimer() {
@@ -2439,13 +2455,14 @@
     if (overlay) overlay.classList.add('is-visible');
     mfOnModalOpen('dashModalOverlay');
     var body = document.getElementById('dashBody');
-    if (pfDashCache) { body.innerHTML = pfDashBuildHtml(pfDashCache); pfDashStartTimer(); return; }
+    if (pfDashCache) { body.innerHTML = pfDashBuildHtml(pfDashCache); pfDashStartTimer(); pfDashUpdateUrgentBadge(); return; }
     body.innerHTML = '<p class="pf-hint">' + t('dashboard.loading') + '</p>';
     if (!pfDashLoading) pfDashLoading = pfDashLoadData();
     pfDashLoading.then(function (data) {
       pfDashCache = data;
       body.innerHTML = pfDashBuildHtml(data);
       pfDashStartTimer();
+      pfDashUpdateUrgentBadge();
     }).catch(function (e) {
       console.error('pfDashOpen', e);
       body.innerHTML = '<div class="dash-empty">' + t('dashboard.loadFailed') + '</div>';
@@ -2456,6 +2473,32 @@
     if (overlay) overlay.classList.remove('is-visible');
     mfOnModalClose('dashModalOverlay');
     pfDashStopTimer();
+  }
+
+  // 🔴 サイトドックの「ダッシュボード」ボタンに表示する、終了間近インジケーター(小さな赤丸)。
+  // 新規fetchは一切行わず、pfDashCache(ページ読み込み時にバックグラウンドで先読み済み、
+  // または実際にダッシュボードを開いた際に読み込まれるデータ)を流用するだけ。
+  // pfDashCacheが無い(未読み込み・fetch失敗)場合は何も表示しない=安全側に倒す。
+  var DOCK_URGENT_DAYS = 3;
+  function pfDashUrgentEndDates() {
+    var data = pfDashCache;
+    if (!data) return [];
+    var dates = [];
+    if (data.season && data.season.endDate) dates.push(new Date(data.season.endDate));
+    pfDashActiveScheduledEvents(data.eventSchedule).forEach(function (ev) { dates.push(new Date(ev.end)); });
+    return dates;
+  }
+  function pfDashHasUrgentEnding() {
+    var now = new Date();
+    return pfDashUrgentEndDates().some(function (end) {
+      var ms = end - now;
+      return ms > 0 && ms <= DOCK_URGENT_DAYS * 86400000;
+    });
+  }
+  function pfDashUpdateUrgentBadge() {
+    var dot = document.getElementById('dockUrgentDot');
+    if (!dot) return;
+    dot.classList.toggle('show', pfDashHasUrgentEnding());
   }
 
   // 名前変更中・削除確認中のプロフィールID（ポップアップブロックの影響を受ける
@@ -5032,6 +5075,7 @@
     pfDashLoading.then(function (data) {
       pfDashCache = data;
       renderDateQuickPresets();
+      pfDashUpdateUrgentBadge();
     }).catch(function (e) { console.error('initDateQuickPresets', e); });
   }
 
