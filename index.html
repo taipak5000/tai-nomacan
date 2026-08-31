@@ -847,7 +847,6 @@
 
   <nav class="page-head-top" aria-label="ページ操作" data-i18n-aria-label="header.ariaLabel">
     <div class="head-btn-group">
-      <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" data-i18n="sidebar.hamburgerToggle">☰ ツール</button>
       <button type="button" class="sidebar-toggle-btn lang-toggle-btn" id="langToggleBtn" onclick="toggleLang()">EN</button>
     </div>
     <button type="button" class="force-refresh-btn" id="forceRefreshBtn" data-i18n="header.forceRefreshBtn" data-i18n-title="header.forceRefreshTitle" title="他サイトで更新した所持通貨などが反映されない場合、リロードの代わりにこちらをお試しください">🔄 最新の状態に更新</button>
@@ -3684,9 +3683,11 @@
     sidebarOverlayEl.classList.remove('is-visible');
   }
   window.openSidebar = openSidebar; // サイトドックの「☰ ツール」ボタンから呼ばれる
-  sidebarToggleBtn.addEventListener('click', function () {
-    if (sidebarEl.classList.contains('sidebar-open')) closeSidebar(); else openSidebar();
-  });
+  if (sidebarToggleBtn) {
+    sidebarToggleBtn.addEventListener('click', function () {
+      if (sidebarEl.classList.contains('sidebar-open')) closeSidebar(); else openSidebar();
+    });
+  }
   sidebarCloseBtn.addEventListener('click', closeSidebar);
   sidebarOverlayEl.addEventListener('click', closeSidebar);
 
