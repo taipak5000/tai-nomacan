@@ -1554,6 +1554,7 @@
       heroDaysTemplate: { ja: 'あと {n}<span class="unit-small">日</span>', en: '{n}<span class="unit-small"> more days</span>' },
       aboutWeeksTemplate: { ja: '（約{n}週間）', en: '(about {n} weeks)' },
       goalDateLineTemplate: { ja: '達成予定日　<strong>{date}</strong>頃', en: 'Estimated goal date: <strong>{date}</strong> (approx.)' },
+      goalDateTooFarTemplate: { ja: '達成予定日　<strong>計算できないほど遠い未来です</strong>', en: 'Estimated goal date: <strong>too far in the future to estimate</strong>' },
       footnoteDaily: { ja: '※1日ごとの獲得ペースをもとにした目安です。実際の日付とは前後する場合があります。', en: '*This is an estimate based on your gain rate per day. The actual date may differ.' }
     },
     history: {
@@ -4719,10 +4720,16 @@
       var weeksNeeded = Math.floor(daysNeeded / 7);
       var today = new Date();
       var estDate = new Date(today.getTime() + daysNeeded * 86400000);
+      // 目標本数が桁外れに大きいと、上のDate計算がミリ秒の有効範囲(約±2.7万年)を
+      // 超えてInvalid Dateになり得る(getTime()がNaNを返す)。その場合はNaN混じりの
+      // 文字列("NaN年NaN月NaN日"等)をそのまま表示せず、代わりに専用の文言を出す
+      // (star-candle/星のキャンドル計算機の同種のガードと同じ考え方)。
+      var estDateValid = !isNaN(estDate.getTime());
+      var goalDateLineHtml = estDateValid ? t('result.goalDateLineTemplate', { date: jpDate(estDate) }) : t('result.goalDateTooFarTemplate');
       html =
         '<div class="hero-stat">' + t('result.heroDaysTemplate', { n: daysNeeded }) + '</div>' +
         (weeksNeeded > 0 ? '<p class="stat-line">' + t('result.aboutWeeksTemplate', { n: weeksNeeded }) + '</p>' : '') +
-        '<p class="stat-line">' + t('result.goalDateLineTemplate', { date: jpDate(estDate) }) + '</p>' +
+        '<p class="stat-line">' + goalDateLineHtml + '</p>' +
         '<p class="stat-line">' + t('result.remainingLineTemplate', { remaining: fmt(remaining), usageNote: usageNote }) + '</p>' +
         '<p class="breakdown">' +
           dailyLine + '<br>' +
