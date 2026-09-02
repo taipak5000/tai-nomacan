@@ -849,7 +849,7 @@
     <div class="head-btn-group">
       <button type="button" class="sidebar-toggle-btn lang-toggle-btn" id="langToggleBtn" onclick="toggleLang()">EN</button>
     </div>
-    <button type="button" class="force-refresh-btn" id="forceRefreshBtn" data-i18n="header.forceRefreshBtn" data-i18n-title="header.forceRefreshTitle" title="他サイトで更新した所持通貨などが反映されない場合、リロードの代わりにこちらをお試しください">🔄 最新の状態に更新</button>
+    <button type="button" class="force-refresh-btn" id="forceRefreshBtn" data-i18n="header.forceRefreshBtn" data-i18n-title="header.forceRefreshTitle" title="他サイトで更新した所持通貨などが反映されない場合、リロードの代わりにこちらをお試しください">最新の状態に更新</button>
   </nav>
 
   <header class="page-head">
@@ -867,7 +867,7 @@
 
   <div class="pf-modal-overlay" id="pfModalOverlay">
     <div class="pf-modal-card">
-      <h3 data-i18n="profile.modalTitle">🗂️ プロフィール（保存枠）</h3>
+      <h3 data-i18n="profile.modalTitle">プロフィール（保存枠）</h3>
       <div id="pfModalBody"></div>
       <div class="pf-add-row">
         <input type="text" id="pfNewProfileInput" class="pf-input" data-i18n-placeholder="profile.newNamePlaceholder" placeholder="新しいプロフィール名" maxlength="20" onkeydown="if(event.key==='Enter'){event.preventDefault(); pfAddProfile();}">
@@ -876,12 +876,12 @@
       <p class="pf-hint" data-i18n="profile.switchHint">プロフィールを切り替えると、目標設定などがそのプロフィール専用の保存内容に切り替わります。サブアカウントなど複数アカウントをお持ちの方にご利用いただけます。</p>
       <div class="pf-currency-section">
         <div class="pf-currency-title" id="pfCurrencyTitle" tabindex="0" role="button" aria-expanded="true" aria-controls="pfCurrencyBody" onclick="pfToggleCurrency()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); pfToggleCurrency();}">
-          <span data-i18n="currency.sectionLabel">💰 所持通貨</span>
+          <span data-i18n="currency.sectionLabel">所持通貨</span>
           <span class="pf-currency-toggle-label" id="pfCurrencyToggleLabel" data-i18n="currency.toggleCloseLabel">閉じる ▲</span>
         </div>
         <div id="pfCurrencyBody"></div>
       </div>
-      <button type="button" class="pf-icon-btn" style="width:100%; margin-top:10px; padding:8px;" data-i18n="profile.backupOpenBtn" onclick="dmOpenModal()">💾 データのバックアップ・復元・削除</button>
+      <button type="button" class="pf-icon-btn" style="width:100%; margin-top:10px; padding:8px;" data-i18n="profile.backupOpenBtn" onclick="dmOpenModal()">データのバックアップ・復元・削除</button>
       <button type="button" class="pf-close-btn" data-i18n="profile.closeBtn" onclick="pfCloseModal()">閉じる</button>
     </div>
   </div>
@@ -889,7 +889,7 @@
   <!-- ▸ 目標（複数目標）管理モーダル -->
   <div class="pf-modal-overlay" id="goalModalOverlay">
     <div class="pf-modal-card">
-      <h3 data-i18n="goalMulti.modalTitle">🗂️ 目標（複数目標管理）</h3>
+      <h3 data-i18n="goalMulti.modalTitle">目標（複数目標管理）</h3>
       <div id="goalModalBody"></div>
       <div class="pf-add-row">
         <input type="text" id="goalNewGoalInput" class="pf-input" data-i18n-placeholder="goalMulti.newNamePlaceholder" placeholder="新しい目標名" maxlength="20" onkeydown="if(event.key==='Enter'){event.preventDefault(); goalAdd();}">
@@ -902,7 +902,7 @@
 
   <div class="pf-modal-overlay" id="dashModalOverlay">
     <div class="pf-modal-card">
-      <h3 data-i18n="dashboard.modalTitle">🗓️ 今日・今週・今月</h3>
+      <h3 data-i18n="dashboard.modalTitle">今日・今週・今月</h3>
       <div id="dashBody"><p class="pf-hint" data-i18n="dashboard.loading">読み込み中…</p></div>
       <button type="button" class="pf-close-btn" data-i18n="profile.closeBtn" onclick="pfDashClose()">閉じる</button>
     </div>
@@ -911,14 +911,14 @@
   <!-- ▸ データのバックアップ・復元・削除モーダル -->
   <div class="pf-modal-overlay" id="dmModalOverlay">
     <div class="pf-modal-card">
-      <h3 data-i18n="backup.modalTitle">💾 データのバックアップ・復元・削除</h3>
+      <h3 data-i18n="backup.modalTitle">データのバックアップ・復元・削除</h3>
       <p class="pf-hint" style="margin-top:0;" data-i18n="backup.hint">このブラウザに保存されている taipak5000.github.io 系ツール（item・wings・companion 等）のデータをまとめて書き出し・読み込み・削除できます。全プロフィール分がまとめて対象になります。</p>
-      <button type="button" class="pf-add-btn" style="width:100%; margin-bottom:8px;" data-i18n="backup.exportBtn" onclick="dmExport()">⬇️ データをエクスポート（ファイルに保存）</button>
+      <button type="button" class="pf-add-btn" style="width:100%; margin-bottom:8px;" data-i18n="backup.exportBtn" onclick="dmExport()">データをエクスポート（ファイルに保存）</button>
       <input type="file" id="dmImportFile" accept="application/json" style="display:none" onchange="dmImportFileSelected(event)">
-      <button type="button" class="pf-icon-btn" style="width:100%; margin-bottom:8px; padding:8px;" data-i18n="backup.importBtn" onclick="document.getElementById('dmImportFile').click()">⬆️ ファイルからインポート</button>
+      <button type="button" class="pf-icon-btn" style="width:100%; margin-bottom:8px; padding:8px;" data-i18n="backup.importBtn" onclick="document.getElementById('dmImportFile').click()">ファイルからインポート</button>
       <div id="dmImportConfirmArea"></div>
       <div id="dmWipeArea">
-        <button type="button" class="pf-icon-btn pf-row-btn-danger" style="width:100%; padding:8px;" data-i18n="backup.wipeBtn" onclick="dmStartWipe()">🗑️ 全データを削除</button>
+        <button type="button" class="pf-icon-btn pf-row-btn-danger" style="width:100%; padding:8px;" data-i18n="backup.wipeBtn" onclick="dmStartWipe()">全データを削除</button>
       </div>
       <div id="dmStatus" class="pf-hint"></div>
       <button type="button" class="pf-close-btn" data-i18n="profile.closeBtn" onclick="dmCloseModal()">閉じる</button>
@@ -928,7 +928,7 @@
   <!-- ▸ ホーム画面アイコンカスタマイズモーダル -->
   <div class="pf-modal-overlay" id="iconCustomModal">
     <div class="pf-modal-card">
-      <h3 data-i18n="iconCustom.modalTitle">🎨 ホーム画面アイコンをカスタマイズ</h3>
+      <h3 data-i18n="iconCustom.modalTitle">ホーム画面アイコンをカスタマイズ</h3>
 
       <p class="pf-hint" style="margin-top:0;" data-i18n="iconCustom.instructions">
         スマホの「ホーム画面に追加」をしたときのアイコンを、好きな絵文字や画像に変更できます。<br>
@@ -936,8 +936,8 @@
       </p>
 
       <div style="display:flex; gap:8px; margin:14px 0;">
-        <button type="button" class="pf-icon-btn" id="iconModeEmojiBtn" onclick="pfIconSetMode('emoji')" style="flex:1; padding:8px;" data-i18n="iconCustom.emojiModeBtn">😀 絵文字</button>
-        <button type="button" class="pf-icon-btn" id="iconModeImageBtn" onclick="pfIconSetMode('image')" style="flex:1; padding:8px;" data-i18n="iconCustom.imageModeBtn">🖼️ 画像</button>
+        <button type="button" class="pf-icon-btn" id="iconModeEmojiBtn" onclick="pfIconSetMode('emoji')" style="flex:1; padding:8px;" data-i18n="iconCustom.emojiModeBtn">絵文字</button>
+        <button type="button" class="pf-icon-btn" id="iconModeImageBtn" onclick="pfIconSetMode('image')" style="flex:1; padding:8px;" data-i18n="iconCustom.imageModeBtn">画像</button>
       </div>
 
       <div id="iconEmojiPanel">
@@ -959,7 +959,7 @@
           <button type="button" onclick="pfIconPickSwatch('#32ADE6')" style="width:32px; height:32px; border-radius:50%; background:#32ADE6; border:2px solid transparent;"></button>
           <button type="button" onclick="pfIconPickSwatch('#48484A')" style="width:32px; height:32px; border-radius:50%; background:#48484A; border:2px solid transparent;"></button>
         </div>
-        <p style="font-size:11.5px; color:var(--text-dim); margin:0 0 6px;" data-i18n="iconCustom.freeColorHint">🎨 タップして好きな色を自由に選ぶこともできます</p>
+        <p style="font-size:11.5px; color:var(--text-dim); margin:0 0 6px;" data-i18n="iconCustom.freeColorHint">タップして好きな色を自由に選ぶこともできます</p>
         <input type="color" id="iconBgColorInput" value="#E8850A" oninput="pfIconUpdatePreview()" style="width:100%; height:40px; border:none; border-radius:8px; background:none;">
       </div>
 
@@ -982,17 +982,17 @@
   <!-- ▸ 表示設定モーダル（ダークモード・キーボードショートカット） -->
   <div class="pf-modal-overlay" id="settingsModalOverlay">
     <div class="pf-modal-card">
-      <h3 data-i18n="settings.modalTitle">⚙️ 表示設定</h3>
+      <h3 data-i18n="settings.modalTitle">表示設定</h3>
 
-      <div class="sidebar-section-label" style="margin:0 0 8px;" data-i18n="settings.displaySectionLabel">🌙 表示</div>
+      <div class="sidebar-section-label" style="margin:0 0 8px;" data-i18n="settings.displaySectionLabel">表示</div>
       <div class="toggle-field" style="margin-bottom:18px;">
         <div class="toggle-text">
           <span class="toggle-title" data-i18n="settings.darkModeLabel">外観モード</span>
         </div>
-        <button type="button" class="pf-icon-btn" id="settingsThemeToggleBtn" onclick="toggleTheme()" aria-label="外観モード: 🖥️ システム（クリックで☀️ ライトに切替）">☀️ ライト</button>
+        <button type="button" class="pf-icon-btn" id="settingsThemeToggleBtn" onclick="toggleTheme()" aria-label="外観モード: システム（クリックでライトに切替）">ライト</button>
       </div>
 
-      <div class="sidebar-section-label" style="margin:0 0 8px;" data-i18n="settings.shortcutsSectionLabel">⌨️ キーボードショートカット</div>
+      <div class="sidebar-section-label" style="margin:0 0 8px;" data-i18n="settings.shortcutsSectionLabel">キーボードショートカット</div>
       <div class="toggle-field" style="margin-bottom:10px;">
         <div class="toggle-text">
           <span class="toggle-title" data-i18n="settings.shortcutsEnableLabel">ショートカットを有効にする</span>
@@ -1005,15 +1005,15 @@
         <span><b>Esc</b> — <span data-i18n="settings.shortcutCloseModal">開いているウィンドウを閉じる</span></span>
       </div>
 
-      <div class="sidebar-section-label" style="margin:18px 0 8px;" data-i18n="settings.customizeSectionLabel">🎨 表示のカスタマイズ</div>
+      <div class="sidebar-section-label" style="margin:18px 0 8px;" data-i18n="settings.customizeSectionLabel">表示のカスタマイズ</div>
       <div class="toggle-field" style="margin-bottom:18px;">
         <div class="toggle-text">
           <span class="toggle-title" data-i18n="settings.customizeIconLabel">ホーム画面アイコン</span>
         </div>
-        <button type="button" class="pf-icon-btn" onclick="settingsGoToIconCustomize()" data-i18n="settings.customizeBtn">🎨 カスタマイズ</button>
+        <button type="button" class="pf-icon-btn" onclick="settingsGoToIconCustomize()" data-i18n="settings.customizeBtn">カスタマイズ</button>
       </div>
 
-      <div class="sidebar-section-label" style="margin:18px 0 8px;" data-i18n="settings.langSectionLabel">🌐 言語</div>
+      <div class="sidebar-section-label" style="margin:18px 0 8px;" data-i18n="settings.langSectionLabel">言語</div>
       <div style="display:flex; gap:8px; margin-bottom:18px;">
         <button type="button" class="pf-icon-btn" id="settingsLangJaBtn" style="flex:1; padding:8px;" onclick="setLang('ja')">日本語</button>
         <button type="button" class="pf-icon-btn" id="settingsLangEnBtn" style="flex:1; padding:8px;" onclick="setLang('en')">English</button>
@@ -1029,7 +1029,7 @@
 
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-head">
-        <div class="sidebar-section-label" data-i18n="sidebar.relatedToolsLabel">🔗 関連ツール</div>
+        <div class="sidebar-section-label" data-i18n="sidebar.relatedToolsLabel">関連ツール</div>
         <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" data-i18n="sidebar.closeBtn">×</button>
       </div>
       <nav>
@@ -1072,7 +1072,7 @@
     <div class="main-content-wrapper">
 
   <section class="card">
-    <h2 data-i18n="goal.heading">🎯 目標を設定</h2>
+    <h2 data-i18n="goal.heading">目標を設定</h2>
     <div class="goal-switch-bar" id="goalSwitchBar"></div>
     <div class="field">
       <label for="target" data-i18n="goal.targetLabel">目標本数</label>
@@ -1096,8 +1096,8 @@
         <span class="unit" data-i18n="goal.unit">本</span>
       </div>
       <div class="quick-actions-row">
-        <button type="button" class="fill-current-btn" id="fillCurrentBtn" data-i18n="goal.fillCurrentBtn">🔄 所持通貨から反映</button>
-        <button type="button" class="survey-btn" id="surveyBtn" data-i18n="goal.surveyBtn">📋 アンケートに回答した(+3本)</button>
+        <button type="button" class="fill-current-btn" id="fillCurrentBtn" data-i18n="goal.fillCurrentBtn">所持通貨から反映</button>
+        <button type="button" class="survey-btn" id="surveyBtn" data-i18n="goal.surveyBtn">アンケートに回答した(+3本)</button>
       </div>
     </div>
     <div class="field">
@@ -1126,7 +1126,7 @@
   </section>
 
   <section class="card">
-    <h2 data-i18n="pace.heading">🕯️ 1日の集めペース</h2>
+    <h2 data-i18n="pace.heading">1日の集めペース</h2>
     <div class="field">
       <div class="slider-row">
         <label for="dailyRate" data-i18n="pace.dailyRateLabel">1日にだいたい集めている本数</label>
@@ -1134,13 +1134,13 @@
       </div>
       <input type="range" id="dailyRate" min="0" max="25" step="1" value="15">
       <p class="field-hint" data-i18n="pace.dailyRateHint">デイリークエストや光の収集などをこなした場合の、ざっくりした目安で大丈夫です。</p>
-      <button type="button" class="fill-current-btn" id="finishTodayBtn">✅ 今日の分を集め終わった(+15本)</button>
+      <button type="button" class="fill-current-btn" id="finishTodayBtn">今日の分を集め終わった(+15本)</button>
       <div class="pace-suggest" id="paceSuggest" style="display:none;">
         <div class="pace-suggest-texts">
           <span class="pace-suggest-text" id="paceSuggestText"></span>
           <span class="pace-suggest-text" id="paceSuggestRange" style="display:none;"></span>
         </div>
-        <button type="button" class="fill-current-btn" id="paceSuggestBtn" data-i18n="pace.useActualBtn">📈 実際のペースを使う</button>
+        <button type="button" class="fill-current-btn" id="paceSuggestBtn" data-i18n="pace.useActualBtn">実際のペースを使う</button>
       </div>
     </div>
     <hr class="divider">
@@ -1177,7 +1177,7 @@
   </section>
 
   <section class="card result-card">
-    <h2 style="justify-content:center;" data-i18n="result.heading">📊 結果</h2>
+    <h2 style="justify-content:center;" data-i18n="result.heading">結果</h2>
 
     <div class="gauge-wrap">
       <div class="candle">
@@ -1197,18 +1197,18 @@
 
   <section class="card titles-card" id="titlesPanel">
     <h2 style="justify-content:space-between;">
-      <span data-i18n="titles.heading">🏆 称号</span>
+      <span data-i18n="titles.heading">称号</span>
       <span class="titles-count" id="titlesCount">0 / 0</span>
     </h2>
     <div class="titles-chips" id="titlesChips"></div>
   </section>
 
   <section class="card">
-    <h2 data-i18n="history.heading">📜 獲得履歴</h2>
+    <h2 data-i18n="history.heading">獲得履歴</h2>
     <div class="streak-strip" id="streakStrip"></div>
     <div class="streak-heatmap-wrap" id="streakHeatmapWrap"></div>
     <div class="history-goal-filter-row" id="historyGoalFilterRow" style="display:none;">
-      <label class="history-goal-filter-label" for="historyGoalFilter" data-i18n="history.filterLabel">🎯 表示する目標</label>
+      <label class="history-goal-filter-label" for="historyGoalFilter" data-i18n="history.filterLabel">表示する目標</label>
       <select class="history-goal-filter" id="historyGoalFilter"></select>
     </div>
     <div class="trend-chart-wrap" id="trendChartWrap"></div>
@@ -1225,13 +1225,13 @@
        🔥ストリークと同じ「日付ログ+ストリーク」の仕組みを流用するが、混同を避ける
        ためstorage key・i18nキーとも完全に独立させた別セクションにする。 -->
   <section class="card">
-    <h2 data-i18n="dailyQuest.heading">🗒️ デイリークエスト記録</h2>
+    <h2 data-i18n="dailyQuest.heading">デイリークエスト記録</h2>
     <div class="streak-strip" id="questStreakStrip"></div>
     <div class="field">
       <label for="questLogInput" data-i18n="dailyQuest.inputLabel">今日やったデイリークエスト</label>
       <textarea id="questLogInput" class="quest-log-textarea" rows="3" data-i18n-placeholder="dailyQuest.inputPlaceholder" placeholder="例: 光の翼を集めた、キャンドルを配った、精霊と一緒に座った"></textarea>
       <p class="field-hint" data-i18n="dailyQuest.inputHint">今日終わらせたデイリークエストを自由に書き留めておけます。同じ日にもう一度保存すると、その日の内容が上書きされます。</p>
-      <button type="button" class="fill-current-btn" id="questLogSaveBtn" data-i18n="dailyQuest.saveBtn">📝 今日の記録を保存</button>
+      <button type="button" class="fill-current-btn" id="questLogSaveBtn" data-i18n="dailyQuest.saveBtn">今日の記録を保存</button>
     </div>
     <hr class="divider">
     <div class="history-list" id="questLogList"></div>
@@ -1247,7 +1247,7 @@
   <footer>
     <span data-i18n="footer.disclaimer">このサイトはSky 星を紡ぐ子どもたちの非公式ファンサイトです。thatgamecompanyは一切関与していません。</span><br>
     <span data-i18n="footer.creditLabel">作成・ご意見:</span> <a href="https://x.com/Skyzztai" target="_blank" rel="noopener noreferrer">@Skyzztai</a>　／　<a href="https://odaibako.net/u/Skyzztai" target="_blank" rel="noopener noreferrer" data-i18n="footer.requestForm">リクエストフォーム</a><br>
-    <a href="https://taipak5000.github.io/tai-info/" target="_blank" rel="noopener noreferrer" data-i18n="footer.infoLink">⚙️ 設定・更新情報・クレジット・プライバシーポリシー</a>
+    <a href="https://taipak5000.github.io/tai-info/" target="_blank" rel="noopener noreferrer" data-i18n="footer.infoLink">設定・更新情報・クレジット・プライバシーポリシー</a>
   </footer>
 
   <div class="noma-toast" id="nomaToast" role="status" aria-live="polite"></div>
@@ -1306,7 +1306,7 @@
     sidebar: {
       hamburgerToggle: { ja: '☰ ツール', en: '☰ Tools' },
       closeBtn: { ja: '×', en: '×' },
-      relatedToolsLabel: { ja: '🔗 関連ツール', en: '🔗 Related Tools' },
+      relatedToolsLabel: { ja: '関連ツール', en: 'Related Tools' },
       langToggleBtn: { ja: 'EN', en: '日本語' }
     },
     dock: {
@@ -1334,13 +1334,13 @@
       ariaLabel: { ja: 'ページ操作', en: 'Page controls' },
       title: { ja: 'ノマキャン計算機', en: 'Nomacan Calculator' },
       subtitle: { ja: 'Sky 星を紡ぐ子どもたち・目標本数まであと何日？', en: 'Sky: Children of the Light — how many days until your goal?' },
-      forceRefreshBtn: { ja: '🔄 最新の状態に更新', en: '🔄 Refresh Now' },
+      forceRefreshBtn: { ja: '最新の状態に更新', en: 'Refresh Now' },
       forceRefreshTitle: { ja: '他サイトで更新した所持通貨などが反映されない場合、リロードの代わりにこちらをお試しください', en: "If currency updated on other sites isn't showing up here, try this instead of a normal reload" }
     },
     profile: {
       barActiveSuffix: { ja: 'に切替中（タップで切替）', en: 'active (tap to switch)' },
       dashboardBtnTitle: { ja: '今日・今週・今月ダッシュボード', en: 'Today / this week / this month' },
-      modalTitle: { ja: '🗂️ プロフィール（保存枠）', en: '🗂️ Profiles' },
+      modalTitle: { ja: 'プロフィール（保存枠）', en: 'Profiles' },
       newNamePlaceholder: { ja: '新しいプロフィール名', en: 'New profile name' },
       addBtn: { ja: '追加', en: 'Add' },
       defaultName: { ja: 'メイン', en: 'Main' },
@@ -1352,12 +1352,12 @@
       accountColorTitle: { ja: 'アカウントカラー', en: 'Account color' },
       resetColorTitle: { ja: 'カラーを初期値に戻す', en: 'Reset color to default' },
       closeBtn: { ja: '閉じる', en: 'Close' },
-      backupOpenBtn: { ja: '💾 データのバックアップ・復元・削除', en: 'Backup / restore / erase data' },
+      backupOpenBtn: { ja: 'データのバックアップ・復元・削除', en: 'Backup / restore / erase data' },
       titlesToggleTemplate: { ja: '{count}個の称号', en: '{count} titles' },
       titlesEmptyState: { ja: 'まだ称号を獲得していません', en: 'No titles earned yet' }
     },
     currency: {
-      sectionLabel: { ja: '💰 所持通貨', en: '💰 Owned Currency' },
+      sectionLabel: { ja: '所持通貨', en: 'Owned Currency' },
       toggleOpenLabel: { ja: '開く ▼', en: 'Open ▼' },
       toggleCloseLabel: { ja: '閉じる ▲', en: 'Close ▲' },
       candle: { ja: 'キャンドル', en: 'Candles' },
@@ -1367,7 +1367,7 @@
       giftPass: { ja: 'ギフトパス', en: 'Gift Pass' }
     },
     dashboard: {
-      modalTitle: { ja: '🗓️ 今日・今週・今月', en: '🗓️ Today / This Week / This Month' },
+      modalTitle: { ja: '今日・今週・今月', en: 'Today / This Week / This Month' },
       loading: { ja: '読み込み中…', en: 'Loading…' },
       loadFailed: { ja: '読み込みに失敗しました', en: 'Failed to load' },
       sectionDaily: { ja: 'デイリー', en: 'Daily' },
@@ -1412,11 +1412,11 @@
       vault: { ja: '書庫', en: 'Vault' }
     },
     backup: {
-      modalTitle: { ja: '💾 データのバックアップ・復元・削除', en: '💾 Backup / Restore / Erase Data' },
+      modalTitle: { ja: 'データのバックアップ・復元・削除', en: 'Backup / Restore / Erase Data' },
       hint: { ja: 'このブラウザに保存されている taipak5000.github.io 系ツール（item・wings・companion 等）のデータをまとめて書き出し・読み込み・削除できます。全プロフィール分がまとめて対象になります。', en: 'Back up, restore, or erase all locally-stored data for the taipak5000.github.io tool suite (item, wings, companion, etc.) at once. This covers all profiles together.' },
-      exportBtn: { ja: '⬇️ データをエクスポート（ファイルに保存）', en: '⬇️ Export data (save to file)' },
-      importBtn: { ja: '⬆️ ファイルからインポート', en: '⬆️ Import from file' },
-      wipeBtn: { ja: '🗑️ 全データを削除', en: '🗑️ Erase all data' },
+      exportBtn: { ja: 'データをエクスポート（ファイルに保存）', en: 'Export data (save to file)' },
+      importBtn: { ja: 'ファイルからインポート', en: 'Import from file' },
+      wipeBtn: { ja: '全データを削除', en: 'Erase all data' },
       exportSuccess: { ja: '書き出しました（{n}件のキー）。', en: 'Exported ({n} keys).' },
       importFileReadError: { ja: 'ファイルの読み込みに失敗しました（JSON形式ではありません）。', en: 'Failed to read file (not valid JSON).' },
       importFileInvalid: { ja: 'このツールで書き出したファイルではないようです。', en: "This doesn't look like a file exported from this tool." },
@@ -1428,54 +1428,54 @@
       wipeSuccess: { ja: '削除しました。ページを再読み込みします…', en: 'Erased. Reloading…' }
     },
     iconCustom: {
-      modalTitle: { ja: '🎨 ホーム画面アイコンをカスタマイズ', en: '🎨 Customize Home Screen Icon' },
+      modalTitle: { ja: 'ホーム画面アイコンをカスタマイズ', en: 'Customize Home Screen Icon' },
       instructions: { ja: 'スマホの「ホーム画面に追加」をしたときのアイコンを、好きな絵文字や画像に変更できます。<br><b>追加する前に</b>設定してください。追加した後に変更しても、既に追加済みのアイコンは自動更新されません（変更したい場合は一度削除して追加し直してください）。', en: "You can change the icon used when adding this site to your phone's home screen. Set this up before adding it — changing it afterward won't update an icon that's already been added (remove and re-add it if you want to change it later)." },
-      emojiModeBtn: { ja: '😀 絵文字', en: '😀 Emoji' },
-      imageModeBtn: { ja: '🖼️ 画像', en: '🖼️ Image' },
+      emojiModeBtn: { ja: '絵文字', en: 'Emoji' },
+      imageModeBtn: { ja: '画像', en: 'Image' },
       emojiLabel: { ja: '絵文字', en: 'Emoji' },
       bgColorLabel: { ja: '背景色', en: 'Background Color' },
-      freeColorHint: { ja: '🎨 タップして好きな色を自由に選ぶこともできます', en: '🎨 Or tap below to pick any color freely' },
+      freeColorHint: { ja: 'タップして好きな色を自由に選ぶこともできます', en: 'Or tap below to pick any color freely' },
       uploadImageLabel: { ja: '画像をアップロード', en: 'Upload Image' },
       previewLabel: { ja: 'プレビュー', en: 'Preview' },
       resetBtn: { ja: 'デフォルトに戻す', en: 'Reset to Default' },
       saveBtn: { ja: '保存して適用', en: 'Save & Apply' },
       selectImageFirst: { ja: '画像を選択してください', en: 'Please select an image' },
       saveFailed: { ja: '保存に失敗しました(容量オーバーの可能性があります)', en: 'Failed to save (storage may be full)' },
-      saved: { ja: '✅ 保存しました。これでホーム画面に追加すると反映されます', en: '✅ Saved. This will apply next time you add this to your home screen.' },
+      saved: { ja: '保存しました。これでホーム画面に追加すると反映されます', en: 'Saved. This will apply next time you add this to your home screen.' },
       resetDone: { ja: 'デフォルトのアイコンに戻しました', en: 'Reset to the default icon.' }
     },
     settings: {
-      modalTitle: { ja: '⚙️ 表示設定', en: '⚙️ Display Settings' },
-      displaySectionLabel: { ja: '🌙 表示', en: '🌙 Display' },
+      modalTitle: { ja: '表示設定', en: 'Display Settings' },
+      displaySectionLabel: { ja: '表示', en: 'Display' },
       darkModeLabel: { ja: '外観モード', en: 'Appearance' },
-      themeToggleToDark: { ja: '🌙 ダーク', en: '🌙 Dark' },
-      themeToggleToLight: { ja: '☀️ ライト', en: '☀️ Light' },
-      themeToggleToSystem: { ja: '🖥️ システム', en: '🖥️ System' },
+      themeToggleToDark: { ja: 'ダーク', en: 'Dark' },
+      themeToggleToLight: { ja: 'ライト', en: 'Light' },
+      themeToggleToSystem: { ja: 'システム', en: 'System' },
       themeToggleAria: { ja: '外観モード: {current}（クリックで{next}に切替）', en: 'Appearance: {current} (click to switch to {next})' },
-      shortcutsSectionLabel: { ja: '⌨️ キーボードショートカット', en: '⌨️ Keyboard Shortcuts' },
+      shortcutsSectionLabel: { ja: 'キーボードショートカット', en: 'Keyboard Shortcuts' },
       shortcutsEnableLabel: { ja: 'ショートカットを有効にする', en: 'Enable keyboard shortcuts' },
       shortcutOpenSettings: { ja: 'この設定を開く', en: 'Open this settings panel' },
       shortcutToggleDark: { ja: '外観モード切替（ライト/ダーク/システム）', en: 'Cycle appearance (Light/Dark/System)' },
       shortcutCloseModal: { ja: '開いているウィンドウを閉じる', en: 'Close the open window' },
-      customizeSectionLabel: { ja: '🎨 表示のカスタマイズ', en: '🎨 Customization' },
+      customizeSectionLabel: { ja: '表示のカスタマイズ', en: 'Customization' },
       customizeIconLabel: { ja: 'ホーム画面アイコン', en: 'Home screen icon' },
-      customizeBtn: { ja: '🎨 カスタマイズ', en: '🎨 Customize' },
-      langSectionLabel: { ja: '🌐 言語', en: '🌐 Language' }
+      customizeBtn: { ja: 'カスタマイズ', en: 'Customize' },
+      langSectionLabel: { ja: '言語', en: 'Language' }
     },
     footer: {
       disclaimer: { ja: 'このサイトはSky 星を紡ぐ子どもたちの非公式ファンサイトです。thatgamecompanyは一切関与していません。', en: 'This is an unofficial fan site for Sky: Children of the Light. thatgamecompany is not involved in any way.' },
       creditLabel: { ja: '作成・ご意見:', en: 'Created by / feedback:' },
       requestForm: { ja: 'リクエストフォーム', en: 'Request form' },
-      infoLink: { ja: '⚙️ 設定・更新情報・クレジット・プライバシーポリシー', en: "⚙️ Settings / What's New / Credits / Privacy Policy" }
+      infoLink: { ja: '設定・更新情報・クレジット・プライバシーポリシー', en: "Settings / What's New / Credits / Privacy Policy" }
     },
     goal: {
-      heading: { ja: '🎯 目標を設定', en: '🎯 Set Your Goal' },
+      heading: { ja: '目標を設定', en: 'Set Your Goal' },
       targetLabel: { ja: '目標本数', en: 'Target Amount' },
       plannedUsageLabel: { ja: '使用予定本数(任意)', en: 'Planned Usage (optional)' },
       plannedUsageHint: { ja: '目標本数とは別に、近々何かに使う予定がある分があれば入力してください。必要本数の計算に加算されます。', en: 'If you have candles you plan to spend on something soon, separate from your goal, enter that amount here. It will be added to your required total.' },
       currentLabel: { ja: '所持本数', en: 'Current Amount' },
-      fillCurrentBtn: { ja: '🔄 所持通貨から反映', en: '🔄 Fill from Owned Currency' },
-      surveyBtn: { ja: '📋 アンケートに回答した(+3本)', en: '📋 Answered the Survey (+3 candles)' },
+      fillCurrentBtn: { ja: '所持通貨から反映', en: 'Fill from Owned Currency' },
+      surveyBtn: { ja: 'アンケートに回答した(+3本)', en: 'Answered the Survey (+3 candles)' },
       targetDateLabel: { ja: '目標日(任意)', en: 'Target Date (optional)' },
       unit: { ja: '本', en: 'candles' },
       targetPlaceholder: { ja: '例: 200', en: 'e.g. 200' },
@@ -1497,7 +1497,7 @@
     goalMulti: {
       barActiveSuffix: { ja: 'を編集中（タップで切替）', en: 'active (tap to switch)' },
       manageBtnTitle: { ja: '目標を管理', en: 'Manage goals' },
-      modalTitle: { ja: '🗂️ 目標（複数目標管理）', en: '🗂️ Goals' },
+      modalTitle: { ja: '目標（複数目標管理）', en: 'Goals' },
       newNamePlaceholder: { ja: '新しい目標名', en: 'New goal name' },
       hint: { ja: '複数の目標を切り替えて管理できます。目標を切り替えると、目標本数・使用予定本数・目標日がその目標専用の内容に切り替わります(所持本数・集めペースはプロフィール共通ですが、集めペースは目標ごとに専用の値を設定することもできます)。', en: "Switch between multiple goals. Switching a goal swaps its target amount, planned usage, and target date (current amount and collection pace stay shared across the whole profile, though you can also set a pace just for an individual goal)." },
       deleteConfirmText: { ja: '「{name}」を削除しますか？この目標の目標設定も削除されます。', en: 'Delete "{name}"? This goal\'s target settings will also be deleted.' },
@@ -1512,26 +1512,26 @@
       paceOverrideBadge: { ja: '⚡専用{n}本/日', en: '⚡ {n}/day' }
     },
     pace: {
-      heading: { ja: '🕯️ 1日の集めペース', en: '🕯️ Daily Collection Pace' },
+      heading: { ja: '1日の集めペース', en: 'Daily Collection Pace' },
       dailyRateLabel: { ja: '1日にだいたい集めている本数', en: 'Roughly how many candles you collect per day' },
       dailyRateHint: { ja: 'デイリークエストや光の収集などをこなした場合の、ざっくりした目安で大丈夫です。', en: 'A rough estimate is fine — based on completing daily quests, collecting light, and so on.' },
       dailyRateReadout: { ja: '{n}本', en: '{n} candles' },
       ashRouteNote: { ja: '（灰キャン）', en: ' (Ash Route)' },
-      finishTodayBtn: { ja: '✅ 今日の分を集め終わった(+{n}本)', en: "✅ Finished today's collection (+{n} candles)" },
+      finishTodayBtn: { ja: '今日の分を集め終わった(+{n}本)', en: "Finished today's collection (+{n} candles)" },
       toggleTitle: { ja: '毎日ハートを送っている', en: 'Sending a Heart every day' },
       toggleSub: { ja: 'ハート1個につき、1日キャンドル3本消費', en: 'Each Heart costs 3 Candles/day' },
       heartsUnit: { ja: '本/日', en: 'candles/day' },
-      actualPaceLabelTemplate: { ja: '📊 獲得履歴から算出した実際の平均ペース: 約<b>{n}本/日</b>', en: '📊 Your actual average pace from history: about <b>{n}/day</b>' },
-      useActualBtn: { ja: '📈 実際のペースを使う', en: '📈 Use My Actual Pace' },
-      actualPaceRangeTemplate: { ja: '📅 最近のペースの振れ幅なら、{dateFast}〜{dateSlow}の間に届きそうです', en: '📅 At your recent pace, expect to reach it between {dateFast} and {dateSlow}' },
-      actualPaceRangeSingleTemplate: { ja: '📅 最近のペースはほぼ一定で、{date}頃に届きそうです', en: '📅 Your recent pace has been steady — expect to reach it around {date}' },
+      actualPaceLabelTemplate: { ja: '獲得履歴から算出した実際の平均ペース: 約<b>{n}本/日</b>', en: 'Your actual average pace from history: about <b>{n}/day</b>' },
+      useActualBtn: { ja: '実際のペースを使う', en: 'Use My Actual Pace' },
+      actualPaceRangeTemplate: { ja: '最近のペースの振れ幅なら、{dateFast}〜{dateSlow}の間に届きそうです', en: 'At your recent pace, expect to reach it between {dateFast} and {dateSlow}' },
+      actualPaceRangeSingleTemplate: { ja: '最近のペースはほぼ一定で、{date}頃に届きそうです', en: 'Your recent pace has been steady — expect to reach it around {date}' },
       overrideToggleTitle: { ja: 'この目標専用のペースを使う', en: 'Use a pace just for this goal' },
       overrideToggleSub: { ja: 'オフのままなら、上の共通ペースがそのまま使われます', en: 'Leave this off to keep using the shared pace above' },
       overridePlaceholder: { ja: '例: 20', en: 'e.g. 20' },
-      overrideActiveHint: { ja: '🎯 この目標の計算には、上のスライダーの代わりに1日{n}本が使われます', en: "🎯 This goal's calculations use {n}/day instead of the shared slider above" }
+      overrideActiveHint: { ja: 'この目標の計算には、上のスライダーの代わりに1日{n}本が使われます', en: "This goal's calculations use {n}/day instead of the shared slider above" }
     },
     result: {
-      heading: { ja: '📊 結果', en: '📊 Result' },
+      heading: { ja: '結果', en: 'Result' },
       enterTarget: { ja: '目標本数を入力すると、達成までの日数が表示されます。', en: 'Enter a target amount to see how many days until you reach your goal.' },
       achieved: { ja: '🎉 目標本数を達成しています！', en: "🎉 You've reached your target!" },
       achievedBreakdown: { ja: '所持 {current}本 ／ 必要 {target}本{usageNote}', en: 'Current {current} candles / Needed {target} candles{usageNote}' },
@@ -1542,7 +1542,7 @@
       currentPaceLabelTemplate: { ja: '今のペース(1日{n}本)では　', en: 'At your current pace ({n} candles/day): ' },
       paceOk: { ja: '✓ 間に合う見込みです', en: '✓ On pace to make it in time' },
       paceWarnTemplate: { ja: '△ 1日{n}本足りません', en: "△ You're short by {n} candles/day" },
-      applyRequiredPaceBtnTemplate: { ja: '⚡ 1日{n}本のペースを設定に反映', en: '⚡ Apply {n}/day to Your Settings' },
+      applyRequiredPaceBtnTemplate: { ja: '1日{n}本のペースを設定に反映', en: 'Apply {n}/day to Your Settings' },
       dailyLineTemplate: { ja: '1日あたり {n}本', en: 'Per day: {n} candles' },
       dailyLineDetailTemplate: { ja: '　(獲得 {gained}本 − ハート消費 {cost}本)', en: ' (gained {gained} candles − Heart cost {cost} candles)' },
       progressLineTemplate: { ja: '進捗 {pct}%', en: 'Progress {pct}%' },
@@ -1557,12 +1557,12 @@
       footnoteDaily: { ja: '※1日ごとの獲得ペースをもとにした目安です。実際の日付とは前後する場合があります。', en: '*This is an estimate based on your gain rate per day. The actual date may differ.' }
     },
     history: {
-      heading: { ja: '📜 獲得履歴', en: '📜 History' },
+      heading: { ja: '獲得履歴', en: 'History' },
       note: { ja: '所持通貨からの反映・アンケート回答による増減を記録します(最大50件)。「取り消す」でその操作だけを元に戻せます。', en: 'Records increases and decreases from filling in from owned currency and survey answers (up to 50 entries). Use "Undo" to revert just that one action.' },
       clearBtn: { ja: '履歴を全て消去', en: 'Clear all history' },
       empty: { ja: 'まだ履歴はありません。所持通貨からの反映やアンケート回答ボタンで記録されます。', en: 'No history yet. It will be recorded when you use the Fill from Owned Currency or Survey Answered buttons.' },
       emptyFiltered: { ja: 'この目標での履歴はまだありません。', en: 'No history yet for this goal.' },
-      filterLabel: { ja: '🎯 表示する目標', en: '🎯 Filter by goal' },
+      filterLabel: { ja: '表示する目標', en: 'Filter by goal' },
       filterAllOption: { ja: 'すべての目標', en: 'All goals' },
       undoBtn: { ja: '取り消す', en: 'Undo' },
       amountTemplate: { ja: '{sign}{n}本', en: '{sign}{n} candles' },
@@ -1572,14 +1572,14 @@
       entryManualEdit: { ja: '本数を直接入力', en: 'Entered amount directly' },
       confirmClear: { ja: '獲得履歴をすべて消去します。よろしいですか？(所持本数自体は変わりません)', en: "This will clear all history. Are you sure? (Your current amount won't change.)" },
       trendEmpty: { ja: 'まだ十分な履歴がないため、グラフは表示できません。', en: 'Not enough history yet to show a chart.' },
-      trendTargetLabel: { ja: '🎯 目標', en: '🎯 Target' },
+      trendTargetLabel: { ja: '目標', en: 'Target' },
       trendAriaLabel: { ja: '所持本数の推移グラフ', en: 'Chart of your candle amount over time' }
     },
     streak: {
       activeTemplate: { ja: '🔥 連続{n}日目の記録中', en: '🔥 Day {n} of your streak' },
       bestSuffixTemplate: { ja: '（最長 {n}日）', en: ' (Best: {n} days)' },
-      emptyText: { ja: '📅 記録するとストリークが貯まります。今日の分を記録してみましょう。', en: '📅 Start recording to build a streak — try logging today\'s collection.' },
-      heatmapLabel: { ja: '📅 記録カレンダー(直近{weeks}週間)', en: '📅 Activity Calendar (last {weeks} weeks)' },
+      emptyText: { ja: '記録するとストリークが貯まります。今日の分を記録してみましょう。', en: 'Start recording to build a streak — try logging today\'s collection.' },
+      heatmapLabel: { ja: '記録カレンダー(直近{weeks}週間)', en: 'Activity Calendar (last {weeks} weeks)' },
       heatmapAriaLabel: { ja: '連続記録日数のカレンダーヒートマップ', en: 'Calendar heatmap of your recording activity' },
       heatmapLegendEmpty: { ja: '未記録', en: 'No record' },
       heatmapLegendRecorded: { ja: '記録した日', en: 'Recorded day' },
@@ -1587,13 +1587,13 @@
       heatmapCellEmptyTemplate: { ja: '{date}：記録なし', en: '{date}: No record' }
     },
     dailyQuest: {
-      heading: { ja: '🗒️ デイリークエスト記録', en: '🗒️ Daily Quest Log' },
+      heading: { ja: 'デイリークエスト記録', en: 'Daily Quest Log' },
       inputLabel: { ja: '今日やったデイリークエスト', en: "Today's daily quests" },
       inputPlaceholder: { ja: '例: 光の翼を集めた、キャンドルを配った、精霊と一緒に座った', en: 'e.g. Collected wax, gave candles, sat with a spirit' },
       inputHint: { ja: '今日終わらせたデイリークエストを自由に書き留めておけます。同じ日にもう一度保存すると、その日の内容が上書きされます。', en: "Jot down whatever daily quests you finished today, in your own words. Saving again on the same day overwrites that day's entry." },
-      saveBtn: { ja: '📝 今日の記録を保存', en: "📝 Save Today's Log" },
+      saveBtn: { ja: '今日の記録を保存', en: "Save Today's Log" },
       note: { ja: '保存すると1日ごとに1件、記録として残ります(最大50日分)。', en: "Saving keeps one entry per day (up to 50 days)." },
-      streakEmptyText: { ja: '📅 記録するとストリークが貯まります。今日やったデイリークエストを書いてみましょう。', en: "📅 Start logging to build a streak — try writing down today's daily quests." },
+      streakEmptyText: { ja: '記録するとストリークが貯まります。今日やったデイリークエストを書いてみましょう。', en: "Start logging to build a streak — try writing down today's daily quests." },
       clearBtn: { ja: '記録を全て消去', en: 'Clear all logs' },
       confirmClear: { ja: 'デイリークエストの記録をすべて消去します。よろしいですか？', en: 'This will clear all daily quest logs. Are you sure?' },
       empty: { ja: 'まだ記録はありません。今日やったデイリークエストを書いて保存してみましょう。', en: "No logs yet. Try writing down today's daily quests and saving them." }
@@ -1605,9 +1605,9 @@
       dismissBtn: { ja: '閉じる', en: 'Dismiss' }
     },
     titles: {
-      heading: { ja: '🏆 称号', en: '🏆 Titles' },
+      heading: { ja: '称号', en: 'Titles' },
       countTemplate: { ja: '{earned} / {total} 個解除', en: '{earned} / {total} unlocked' },
-      unlockedToastTemplate: { ja: '🏆 称号「{icon} {name}」を獲得しました！', en: '🏆 Title unlocked: {icon} {name}!' },
+      unlockedToastTemplate: { ja: '称号「{icon} {name}」を獲得しました！', en: 'Title unlocked: {icon} {name}!' },
       lockedName: { ja: '？？？', en: '？？？' },
       lockedHint: { ja: '称号は条件を満たすと明らかになります', en: 'Unlocks when you meet its condition' }
     }
@@ -2037,7 +2037,7 @@
     var bar = document.getElementById('pfBar');
     if (bar) {
       bar.innerHTML = '<span class="pf-bar-text" tabindex="0" role="button" onclick="pfOpenModal()" ' +
-        'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); pfOpenModal();}">🗂️ <b>' + pfEscapeHtml(pfDisplayName(active)) + '</b>&nbsp;' + t('profile.barActiveSuffix') + '</span>' +
+        'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); pfOpenModal();}"><b>' + pfEscapeHtml(pfDisplayName(active)) + '</b>&nbsp;' + t('profile.barActiveSuffix') + '</span>' +
         '<button type="button" class="pf-dash-btn" onclick="pfDashOpen()" title="' + t('profile.dashboardBtnTitle') + '">🗓️</button>';
     }
     // 画面下部クイックメニュー(ドック)のプロフィールボタンにも、現在アクティブな
@@ -3431,7 +3431,7 @@
     var bar = document.getElementById('goalSwitchBar');
     if (!bar) return;
     bar.innerHTML = '<span class="goal-bar-text" tabindex="0" role="button" onclick="goalOpenModal()" ' +
-      'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); goalOpenModal();}">🎯 <b>' + pfEscapeHtml(goalDisplayName(active)) + '</b>&nbsp;' + t('goalMulti.barActiveSuffix') + '</span>' +
+      'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault(); goalOpenModal();}"><b>' + pfEscapeHtml(goalDisplayName(active)) + '</b>&nbsp;' + t('goalMulti.barActiveSuffix') + '</span>' +
       '<button type="button" class="pf-dash-btn" onclick="goalOpenModal()" title="' + t('goalMulti.manageBtnTitle') + '">🗂️</button>';
     // 目標の追加・削除・並べ替えなど、目標一覧が変わりうる操作は最終的にすべて
     // goalRenderBar()を呼ぶため、ここで履歴・推移グラフの「目標」絞り込みUI
@@ -5060,7 +5060,7 @@
     oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
     presets.push({ label: t('goal.presetOneMonth'), dateStr: formatDateValue(oneMonthLater) });
     dateQuickPresetsEl.innerHTML = presets.map(function (p) {
-      return '<button type="button" class="fill-current-btn date-quick-preset-btn" data-date="' + p.dateStr + '">📅 ' + pfEscapeHtml(p.label) + '</button>';
+      return '<button type="button" class="fill-current-btn date-quick-preset-btn" data-date="' + p.dateStr + '">' + pfEscapeHtml(p.label) + '</button>';
     }).join('');
   }
   if (dateQuickPresetsEl) {
