@@ -1423,6 +1423,8 @@
       importConfirmText: { ja: '{n}件のキーをインポートします。現在保存されているデータは上書きされます（インポートするファイルに無いキーはそのまま残ります）。よろしいですか？', en: 'Import {n} keys? Currently stored data will be overwritten for matching keys (keys not present in the file are left as-is). Continue?' },
       importExecuteBtn: { ja: 'インポート実行', en: 'Import' },
       importSuccess: { ja: 'インポートしました。ページを再読み込みします…', en: 'Imported. Reloading…' },
+      importPartialFail: { ja: '{total}件中{fail}件の復元に失敗しました（保存容量の上限などが原因の可能性があります）。残り{ok}件は復元できました。ページを再読み込みします…', en: '{fail} of {total} keys failed to restore (this may be due to a storage limit). The other {ok} keys were restored. Reloading…' },
+      importAllFail: { ja: '{total}件すべての復元に失敗しました（保存容量の上限などが原因の可能性があります）。', en: 'All {total} keys failed to restore (this may be due to a storage limit).' },
       wipeConfirmText: { ja: 'すべてのプロフィール・所持アイテム・お気に入り・精霊ツリーの進捗など、このブラウザに保存されている全データを削除します。この操作は取り消せません。先にエクスポートしておくことをおすすめします。本当に削除しますか？', en: 'This will erase ALL locally stored data (profiles, owned items, favorites, spirit tree progress, etc.) across the whole tool suite. This cannot be undone. Exporting a backup first is recommended. Really erase everything?' },
       wipeExecuteBtn: { ja: '完全に削除する', en: 'Erase everything' },
       wipeSuccess: { ja: '削除しました。ページを再読み込みします…', en: 'Erased. Reloading…' }
@@ -2935,13 +2937,29 @@
   }
   function dmConfirmImport() {
     if (!dmPendingImport) return;
+    var okCount = 0;
+    var failedKeys = [];
     Object.keys(dmPendingImport).forEach(function (key) {
-      localStorage.setItem(key, dmPendingImport[key]);
+      try {
+        localStorage.setItem(key, dmPendingImport[key]);
+        okCount++;
+      } catch (e) {
+        failedKeys.push(key);
+      }
     });
     dmPendingImport = null;
     document.getElementById('dmImportConfirmArea').innerHTML = '';
-    document.getElementById('dmStatus').textContent = t('backup.importSuccess');
-    setTimeout(function () { location.reload(); }, 800);
+    var total = okCount + failedKeys.length;
+    if (failedKeys.length > 0) {
+      document.getElementById('dmStatus').textContent = okCount > 0
+        ? t('backup.importPartialFail', { total: total, ok: okCount, fail: failedKeys.length })
+        : t('backup.importAllFail', { total: total, fail: failedKeys.length });
+    } else {
+      document.getElementById('dmStatus').textContent = t('backup.importSuccess');
+    }
+    if (okCount > 0) {
+      setTimeout(function () { location.reload(); }, 800);
+    }
   }
 
   var dmWipeConfirming = false;
