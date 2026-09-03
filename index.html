@@ -16,7 +16,10 @@
   // scriptより先に単独で動く必要があるため、ここだけロジックを複製している）。
   try {
     var storedTheme = localStorage.getItem('sky_app_theme');
-    var isDark = storedTheme === 'dark' || ((storedTheme === 'system' || storedTheme === null) && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    var systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // resolveEffectiveTheme()と同じ判定にする：'light'/'dark'はそのまま採用し、
+    // それ以外（'system'・未設定・想定外の値）はすべてOS設定に従う
+    var isDark = (storedTheme === 'light' || storedTheme === 'dark') ? storedTheme === 'dark' : systemPrefersDark;
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
     var csm = document.querySelector('meta[name="color-scheme"]');
     if (csm) csm.setAttribute('content', isDark ? 'dark' : 'light');
@@ -802,12 +805,6 @@
     display: inline-flex; align-items: center; gap: 6px; font-weight: 500;
   }
   .sidebar-toggle-btn:hover { border-color: var(--amber); }
-  /* 🖥️ デスクトップレイアウト統一: ドックの「☰ ツール」ボタンと同じ関連ツール
-     オーバーレイを開くだけのこのヘッダー側ボタンは、ドックが常時表示される
-     850px以上の幅では重複導線になるため非表示にする(他ツール(wings等)と同じ
-     基準)。#langToggleBtnは.sidebar-toggle-btnクラスを共用しているがidを
-     指定しているためこちらは対象外で、そのまま表示され続ける。 */
-  @media (min-width: 850px) { #sidebarToggleBtn { display: none; } }
   .sidebar-close-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-dim); padding: 0; line-height: 1; flex-shrink: 0; }
   .head-btn-group { display: flex; gap: 8px; }
   .lang-toggle-btn { min-width: 42px; justify-content: center; }
@@ -1760,9 +1757,6 @@
       var v = localStorage.getItem(THEME_STORAGE_KEY);
       return (v === 'dark' || v === 'light' || v === 'system') ? v : 'system';
     } catch (e) { return 'system'; }
-  }
-  function isDarkTheme() {
-    return document.documentElement.getAttribute('data-theme') === 'dark';
   }
   function themeModeLabelKey(mode) {
     return mode === 'dark' ? 'settings.themeToggleToDark' : mode === 'light' ? 'settings.themeToggleToLight' : 'settings.themeToggleToSystem';
@@ -3702,7 +3696,6 @@
   // ═══ サイドバー開閉 ═══
   var sidebarEl = document.getElementById('sidebar');
   var sidebarOverlayEl = document.getElementById('sidebarOverlay');
-  var sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
   var sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
 
   function openSidebar() {
@@ -3714,11 +3707,6 @@
     sidebarOverlayEl.classList.remove('is-visible');
   }
   window.openSidebar = openSidebar; // サイトドックの「☰ ツール」ボタンから呼ばれる
-  if (sidebarToggleBtn) {
-    sidebarToggleBtn.addEventListener('click', function () {
-      if (sidebarEl.classList.contains('sidebar-open')) closeSidebar(); else openSidebar();
-    });
-  }
   sidebarCloseBtn.addEventListener('click', closeSidebar);
   sidebarOverlayEl.addEventListener('click', closeSidebar);
 
@@ -4517,8 +4505,6 @@
       setTimeout(advanceNomaToastQueue, 200); // フェードアウトの間をおいてから次を表示
     }, 2600);
   }
-  // 単発表示用(既存呼び出し互換)。複数件をまとめて出したい場合はqueueNomaToast()を使う。
-  function showNomaToast(msg) { queueNomaToast(msg); }
 
   // ═══ 📊 獲得履歴から算出する「実際の平均ペース」の提案(スライダーは手動調整のまま残す) ═══
   // 直近14日以内の履歴があればそれを、無ければ全履歴の期間を使って
