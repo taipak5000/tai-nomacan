@@ -55,6 +55,7 @@
        手計算ではなくWCAG式で実測して確認済み）。すぐ下の
        :root[data-theme="dark"] 側の値（--green含む）は変更していない。 */
     --amber-deep: #A05905;
+    --amber-deep-bg: rgba(160,89,5,0.12);
     --text: #3A2E22;
     /* ⚙️ 表示設定 - ライトモード配色: ダークモードの --text-dim は本日 WCAG AA
        4.5:1以上を確保するため明度調整済み（上記コメント参照）だったが、ライトモード側の
@@ -81,6 +82,7 @@
     --cream-deep: #241B10;
     --card-bg: #2A2015;
     --amber-deep: #FFA733;
+    --amber-deep-bg: rgba(255,167,51,0.12);
     --text: #F5ECE0;
     --text-dim: #B7A78E;
     --border: rgba(255,241,224,0.14);
@@ -93,7 +95,11 @@
   .inline-icon.ok { stroke: var(--green); color: var(--green); }
   .icon-chip {
     display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-    border-radius: 26%; color: var(--amber-deep);
+    background: var(--amber-deep-bg);
+    background-image: linear-gradient(180deg, rgba(255,255,255,0.32), rgba(255,255,255,0) 60%);
+    border-radius: 26%;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35), inset 0 1px 1px rgba(255,255,255,0.5), 0 1px 2px rgba(0,0,0,0.10);
+    color: var(--amber-deep);
   }
   .icon-chip svg { display: block; stroke: var(--amber-deep); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   .pf-titles-caret { transition: transform 0.15s ease; }
@@ -1124,7 +1130,7 @@
     <div class="pf-modal-card">
       <h3 data-i18n="settings.modalTitle">表示設定</h3>
 
-      <div class="sidebar-section-label" style="margin:0 0 8px;" data-i18n="settings.displaySectionLabel">表示</div>
+      <div class="sidebar-section-label" style="margin:0 0 8px;"><svg class="inline-icon" width="15" height="15"><use href="#i-monitor"/></svg> <span data-i18n="settings.displaySectionLabel">表示</span></div>
       <div class="toggle-field" style="margin-bottom:18px;">
         <div class="toggle-text">
           <span class="toggle-title" data-i18n="settings.darkModeLabel">外観モード</span>
@@ -1132,7 +1138,7 @@
         <button type="button" class="pf-icon-btn" id="settingsThemeToggleBtn" onclick="toggleTheme()" aria-label="外観モード: システム（クリックでライトに切替）">ライト</button>
       </div>
 
-      <div class="sidebar-section-label" style="margin:0 0 8px;" data-i18n="settings.shortcutsSectionLabel">キーボードショートカット</div>
+      <div class="sidebar-section-label" style="margin:0 0 8px;"><svg class="inline-icon" width="15" height="15"><use href="#i-keyboard"/></svg> <span data-i18n="settings.shortcutsSectionLabel">キーボードショートカット</span></div>
       <div class="toggle-field" style="margin-bottom:10px;">
         <div class="toggle-text">
           <span class="toggle-title" data-i18n="settings.shortcutsEnableLabel">ショートカットを有効にする</span>
@@ -1145,7 +1151,7 @@
         <span><b>Esc</b> — <span data-i18n="settings.shortcutCloseModal">開いているウィンドウを閉じる</span></span>
       </div>
 
-      <div class="sidebar-section-label" style="margin:18px 0 8px;" data-i18n="settings.customizeSectionLabel">表示のカスタマイズ</div>
+      <div class="sidebar-section-label" style="margin:18px 0 8px;"><svg class="inline-icon" width="15" height="15"><use href="#i-palette"/></svg> <span data-i18n="settings.customizeSectionLabel">表示のカスタマイズ</span></div>
       <div class="toggle-field" style="margin-bottom:18px;">
         <div class="toggle-text">
           <span class="toggle-title" data-i18n="settings.customizeIconLabel">ホーム画面アイコン</span>
@@ -1153,7 +1159,7 @@
         <button type="button" class="pf-icon-btn" onclick="settingsGoToIconCustomize()" data-i18n="settings.customizeBtn">カスタマイズ</button>
       </div>
 
-      <div class="sidebar-section-label" style="margin:18px 0 8px;" data-i18n="settings.langSectionLabel">言語</div>
+      <div class="sidebar-section-label" style="margin:18px 0 8px;"><svg class="inline-icon" width="15" height="15"><use href="#i-globe"/></svg> <span data-i18n="settings.langSectionLabel">言語</span></div>
       <div style="display:flex; gap:8px; margin-bottom:18px;">
         <button type="button" class="pf-icon-btn" id="settingsLangJaBtn" style="flex:1; padding:8px;" onclick="setLang('ja')">日本語</button>
         <button type="button" class="pf-icon-btn" id="settingsLangEnBtn" style="flex:1; padding:8px;" onclick="setLang('en')">English</button>
@@ -1402,22 +1408,22 @@
        ため、意図に反してドックがモーダルより手前に出てしまう) -->
   <nav class="site-dock" id="siteDock" data-i18n-aria-label="dock.ariaLabel" aria-label="クイックメニュー">
     <button type="button" onclick="pfOpenModal()">
-      <span class="site-dock-icon" aria-hidden="true"><svg class="inline-icon" width="20" height="20"><use href="#i-folder"/></svg></span>
+      <span class="site-dock-icon" aria-hidden="true"><span class="icon-chip" style="width:28px; height:28px;"><svg width="22" height="22"><use href="#i-folder"/></svg></span></span>
       <span class="site-dock-label" id="siteDockProfileLabel">プロフィール</span>
     </button>
     <button type="button" onclick="pfDashOpen()">
       <span class="site-dock-icon-wrap">
-        <span class="site-dock-icon" aria-hidden="true"><svg class="inline-icon" width="20" height="20"><use href="#i-calendar"/></svg></span>
+        <span class="site-dock-icon" aria-hidden="true"><span class="icon-chip" style="width:28px; height:28px;"><svg width="22" height="22"><use href="#i-calendar"/></svg></span></span>
         <span class="dock-urgent-dot" id="dockUrgentDot" aria-hidden="true" title="季節/イベントの終了が近づいています" data-i18n-title="dock.urgentTitle"></span>
       </span>
       <span class="site-dock-label" data-i18n="dock.dashboard">ダッシュボード</span>
     </button>
     <button type="button" onclick="openSidebar()">
-      <span class="site-dock-icon" aria-hidden="true"><svg class="inline-icon" width="20" height="20"><use href="#i-menu"/></svg></span>
+      <span class="site-dock-icon" aria-hidden="true"><span class="icon-chip" style="width:28px; height:28px;"><svg width="22" height="22"><use href="#i-menu"/></svg></span></span>
       <span class="site-dock-label" data-i18n="dock.tools">ツール</span>
     </button>
     <button type="button" onclick="settingsOpenModal()">
-      <span class="site-dock-icon" aria-hidden="true"><svg class="inline-icon" width="20" height="20"><use href="#i-settings"/></svg></span>
+      <span class="site-dock-icon" aria-hidden="true"><span class="icon-chip" style="width:28px; height:28px;"><svg width="22" height="22"><use href="#i-settings"/></svg></span></span>
       <span class="site-dock-label" data-i18n="dock.settings">表示設定</span>
     </button>
   </nav>
@@ -1445,7 +1451,7 @@
     },
     sidebar: {
       hamburgerToggle: { ja: '☰ ツール', en: '☰ Tools' },
-      closeBtn: { ja: '<svg class="inline-icon" width="14" height="14"><use href="#i-close"/></svg>', en: '<svg class="inline-icon" width="14" height="14"><use href="#i-close"/></svg>' },
+      closeBtn: { ja: '<span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span>', en: '<span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span>' },
       relatedToolsLabel: { ja: '関連ツール', en: 'Related Tools' },
       langToggleBtn: { ja: 'EN', en: '日本語' }
     },
@@ -4522,7 +4528,7 @@
       msg = t('oneYearAgo.questTemplate', { text: pfEscapeHtml(oneYearAgoTruncate(questEntry.text, 30)) });
     }
     wrap.innerHTML = '<span class="one-year-ago-text">' + msg + '</span>' +
-      '<button type="button" class="one-year-ago-close-btn" aria-label="' + pfEscapeHtml(t('oneYearAgo.dismissBtn')) + '"><svg class="inline-icon" width="14" height="14"><use href="#i-close"/></svg></button>';
+      '<button type="button" class="one-year-ago-close-btn" aria-label="' + pfEscapeHtml(t('oneYearAgo.dismissBtn')) + '"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>';
     wrap.classList.add('is-visible');
   }
   // 閉じるボタンはrenderOneYearAgoBanner()のたびにinnerHTMLごと作り直されるため、
