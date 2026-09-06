@@ -4075,7 +4075,7 @@
             '<span class="history-time">' + historyTimeLabel(entry.time) + '</span>' +
             '<span class="history-label">' + (entry.labelKey ? t(entry.labelKey) : entry.label) + '</span>' +
           '</div>' +
-          '<span class="history-amount' + (isPlus ? ' is-plus' : ' is-minus') + '">' + t(Math.abs(entry.amount) === 1 ? 'history.amountTemplateOne' : 'history.amountTemplate', { sign: sign, n: fmt(Math.abs(entry.amount)) }) + '</span>' +
+          '<span class="history-amount' + (isPlus ? ' is-plus' : ' is-minus') + '">' + t(isOnePlural(Math.abs(entry.amount)) ? 'history.amountTemplateOne' : 'history.amountTemplate', { sign: sign, n: fmt(Math.abs(entry.amount)) }) + '</span>' +
           '<button type="button" class="history-undo-btn" data-history-id="' + entry.id + '">' + t('history.undoBtn') + '</button>' +
         '</div>';
       }).join('');
@@ -5037,7 +5037,7 @@
     els.current.value = newVal;
     update();
     saveState();
-    addHistoryEntry('history.entryFillCurrent', newVal - before);
+    addHistoryEntry('history.entryFillCurrent', Math.round((newVal - before) * 100) / 100);
     syncCommittedCurrent();
   });
 
