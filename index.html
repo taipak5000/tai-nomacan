@@ -489,12 +489,18 @@
   .hero-stat { font-family: 'Kaisei Decol', serif; font-size: 38px; color: var(--amber-deep); margin: 2px 0 4px; }
   .hero-stat .unit-small { font-size: 17px; margin-left: 2px; }
   .stat-line { font-size: 14px; color: var(--text-dim); margin: 5px 0; }
+  /* 🔢 数字と単位に強弱: <strong>は数字部分だけを囲み、単位(本/日など)はこの外側に
+     置いて素の.stat-line色/太さのまま残す(pace.actualPaceLabelTemplate・
+     result.remainingLineTemplate系のマークアップ参照)。数字だけが強調されて見える。 */
   .stat-line strong { color: var(--text); font-weight: 700; }
   .breakdown { font-size: 12.5px; color: var(--text-dim); margin-top: 12px; line-height: 1.8; }
 
   .state-message { font-size: 14.5px; line-height: 1.8; padding: 6px 4px 2px; color: var(--text-dim); }
   .state-message.achieved { color: var(--amber-deep); font-size: 15.5px; }
-  .state-message.warning { color: var(--red); }
+  /* 📖 長文は左揃え: warning文言は2文構成(<br>区切り)の説明文のため、親.result-card
+     由来のtext-align:centerを打ち消して読みやすい左揃えに戻す(achieved/enterTargetの
+     1文メッセージは中央揃えのままでよいため、warningだけに絞って上書きする) */
+  .state-message.warning { color: var(--red); text-align: left; }
 
   .target-date-box {
     margin: 10px 0; padding: 10px 12px; border-radius: 10px;
@@ -785,7 +791,7 @@
     flex: 1; background: var(--cream); border: 1px solid var(--amber); border-radius: 8px;
     padding: 6px 8px; color: var(--text); font-size: 14px; font-family: inherit; min-width: 0;
   }
-  .pf-row-confirm-text { flex: 1; font-size: 12.5px; color: var(--text); line-height: 1.4; }
+  .pf-row-confirm-text { flex: 1; font-size: 12.5px; color: var(--text); line-height: 1.6; }
   .pf-row-btn-ok { background: var(--amber); color: #fff; border: none; font-weight: 700; }
   .pf-row-btn-danger { background: var(--red); color: #fff; border: none; }
   /* .pf-icon-btn:hover (0,2,0)がこの後の.pf-row-btn-danger単体(0,1,0)より詳細度で勝ってしまい、
@@ -1694,7 +1700,7 @@
       toggleTitle: { ja: '毎日ハートを送っている', en: 'Sending a Heart every day' },
       toggleSub: { ja: 'ハート1個につき、1日キャンドル3本消費', en: 'Each Heart costs 3 Candles/day' },
       heartsUnit: { ja: '本/日', en: 'candles/day' },
-      actualPaceLabelTemplate: { ja: '獲得履歴から算出した実際の平均ペース: 約<b>{n}本/日</b>', en: 'Your actual average pace from history: about <b>{n}/day</b>' },
+      actualPaceLabelTemplate: { ja: '獲得履歴から算出した実際の平均ペース: 約<b>{n}</b>本/日', en: 'Your actual average pace from history: about <b>{n}</b>/day' },
       useActualBtn: { ja: '実際のペースを使う', en: 'Use My Actual Pace' },
       actualPaceRangeTemplate: { ja: '最近のペースの振れ幅なら、{dateFast}〜{dateSlow}の間に届きそうです', en: 'At your recent pace, expect to reach it between {dateFast} and {dateSlow}' },
       actualPaceRangeSingleTemplate: { ja: '最近のペースはほぼ一定で、{date}頃に届きそうです', en: 'Your recent pace has been steady — expect to reach it around {date}' },
@@ -1713,8 +1719,8 @@
       heroDailyPaceTemplate: { ja: '1日 {n}<span class="unit-small">本</span>', en: '{n}<span class="unit-small"> candles/day</span>' },
       heroDailyPaceTemplateOne: { ja: '1日 {n}<span class="unit-small">本</span>', en: '{n}<span class="unit-small"> candle/day</span>' },
       paceNeededByTemplate: { ja: '目標日　<strong>{date}</strong>までに必要なペース', en: 'Pace needed by <strong>{date}</strong>' },
-      remainingLineTemplate: { ja: '残り　<strong>{remaining}本</strong>{usageNote}', en: 'Remaining: <strong>{remaining} candles</strong>{usageNote}' },
-      remainingLineTemplateOne: { ja: '残り　<strong>{remaining}本</strong>{usageNote}', en: 'Remaining: <strong>{remaining} candle</strong>{usageNote}' },
+      remainingLineTemplate: { ja: '残り　<strong>{remaining}</strong>本{usageNote}', en: 'Remaining: <strong>{remaining}</strong> candles{usageNote}' },
+      remainingLineTemplateOne: { ja: '残り　<strong>{remaining}</strong>本{usageNote}', en: 'Remaining: <strong>{remaining}</strong> candle{usageNote}' },
       currentPaceLabelTemplate: { ja: '今のペース(1日{n}本)では　', en: 'At your current pace ({n} candles/day): ' },
       currentPaceLabelTemplateOne: { ja: '今のペース(1日{n}本)では　', en: 'At your current pace ({n} candle/day): ' },
       paceOk: { ja: '<svg class="inline-icon ok" width="13" height="13"><use href="#i-check"/></svg> 間に合う見込みです', en: '<svg class="inline-icon ok" width="13" height="13"><use href="#i-check"/></svg> On pace to make it in time' },
