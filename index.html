@@ -1646,6 +1646,7 @@
       surveyBtn: { ja: 'アンケートに回答した(+3本)', en: 'Answered the Survey (+3 candles)' },
       targetDateLabel: { ja: '目標日(任意)', en: 'Target Date (optional)' },
       unit: { ja: '本', en: 'candles' },
+      unitOne: { ja: '本', en: 'candle' },
       targetPlaceholder: { ja: '例: 200', en: 'e.g. 200' },
       plannedUsagePlaceholder: { ja: '例: 50', en: 'e.g. 50' },
       currentPlaceholder: { ja: '例: 30', en: 'e.g. 30' },
@@ -1676,7 +1677,9 @@
       summaryNoTarget: { ja: '目標本数が未設定です', en: 'No target amount set' },
       summaryAchieved: { ja: '<svg class="inline-icon" width="13" height="13"><use href="#i-sparkle"/></svg> 達成済み', en: '<svg class="inline-icon" width="13" height="13"><use href="#i-sparkle"/></svg> Goal reached' },
       summaryRemainingTemplate: { ja: '残り{remaining}本（{pct}%）', en: '{remaining} candles left ({pct}%)' },
+      summaryRemainingTemplateOne: { ja: '残り{remaining}本（{pct}%）', en: '{remaining} candle left ({pct}%)' },
       summaryDaysTemplate: { ja: ' ・あと約{n}日', en: ' · about {n} days left' },
+      summaryDaysTemplateOne: { ja: ' ・あと約{n}日', en: ' · about {n} day left' },
       paceOverrideBadge: { ja: '<svg class="inline-icon" width="12" height="12"><use href="#i-bolt"/></svg>専用{n}本/日', en: '<svg class="inline-icon" width="12" height="12"><use href="#i-bolt"/></svg> {n}/day' }
     },
     pace: {
@@ -1684,8 +1687,10 @@
       dailyRateLabel: { ja: '1日にだいたい集めている本数', en: 'Roughly how many candles you collect per day' },
       dailyRateHint: { ja: 'デイリークエストや光の収集などをこなした場合の、ざっくりした目安で大丈夫です。', en: 'A rough estimate is fine — based on completing daily quests, collecting light, and so on.' },
       dailyRateReadout: { ja: '{n}本', en: '{n} candles' },
+      dailyRateReadoutOne: { ja: '{n}本', en: '{n} candle' },
       ashRouteNote: { ja: '（灰キャン）', en: ' (Ash Route)' },
       finishTodayBtn: { ja: '今日の分を集め終わった(+{n}本)', en: "Finished today's collection (+{n} candles)" },
+      finishTodayBtnOne: { ja: '今日の分を集め終わった(+{n}本)', en: "Finished today's collection (+{n} candle)" },
       toggleTitle: { ja: '毎日ハートを送っている', en: 'Sending a Heart every day' },
       toggleSub: { ja: 'ハート1個につき、1日キャンドル3本消費', en: 'Each Heart costs 3 Candles/day' },
       heartsUnit: { ja: '本/日', en: 'candles/day' },
@@ -1702,23 +1707,31 @@
       heading: { ja: '結果', en: 'Result' },
       enterTarget: { ja: '目標本数を入力すると、達成までの日数が表示されます。', en: 'Enter a target amount to see how many days until you reach your goal.' },
       achieved: { ja: '<svg class="inline-icon" width="15" height="15"><use href="#i-sparkle"/></svg> 目標本数を達成しています！', en: '<svg class="inline-icon" width="15" height="15"><use href="#i-sparkle"/></svg> You\'ve reached your target!' },
-      achievedBreakdown: { ja: '所持 {current}本 ／ 必要 {target}本{usageNote}', en: 'Current {current} candles / Needed {target} candles{usageNote}' },
+      achievedBreakdown: { ja: '所持 {current}本 ／ 必要 {target}本{usageNote}', en: 'Current {current} {currentUnit} / Needed {target} {targetUnit}{usageNote}' },
       usageNote: { ja: '（使用予定{amount}本を含む）', en: ' (includes {amount} candles planned for use)' },
+      usageNoteOne: { ja: '（使用予定{amount}本を含む）', en: ' (includes {amount} candle planned for use)' },
       heroDailyPaceTemplate: { ja: '1日 {n}<span class="unit-small">本</span>', en: '{n}<span class="unit-small"> candles/day</span>' },
+      heroDailyPaceTemplateOne: { ja: '1日 {n}<span class="unit-small">本</span>', en: '{n}<span class="unit-small"> candle/day</span>' },
       paceNeededByTemplate: { ja: '目標日　<strong>{date}</strong>までに必要なペース', en: 'Pace needed by <strong>{date}</strong>' },
       remainingLineTemplate: { ja: '残り　<strong>{remaining}本</strong>{usageNote}', en: 'Remaining: <strong>{remaining} candles</strong>{usageNote}' },
+      remainingLineTemplateOne: { ja: '残り　<strong>{remaining}本</strong>{usageNote}', en: 'Remaining: <strong>{remaining} candle</strong>{usageNote}' },
       currentPaceLabelTemplate: { ja: '今のペース(1日{n}本)では　', en: 'At your current pace ({n} candles/day): ' },
+      currentPaceLabelTemplateOne: { ja: '今のペース(1日{n}本)では　', en: 'At your current pace ({n} candle/day): ' },
       paceOk: { ja: '<svg class="inline-icon ok" width="13" height="13"><use href="#i-check"/></svg> 間に合う見込みです', en: '<svg class="inline-icon ok" width="13" height="13"><use href="#i-check"/></svg> On pace to make it in time' },
       paceWarnTemplate: { ja: '<svg class="inline-icon warn" width="13" height="13"><use href="#i-warning"/></svg> 1日{n}本足りません', en: '<svg class="inline-icon warn" width="13" height="13"><use href="#i-warning"/></svg> You\'re short by {n} candles/day' },
+      paceWarnTemplateOne: { ja: '<svg class="inline-icon warn" width="13" height="13"><use href="#i-warning"/></svg> 1日{n}本足りません', en: '<svg class="inline-icon warn" width="13" height="13"><use href="#i-warning"/></svg> You\'re short by {n} candle/day' },
       applyRequiredPaceBtnTemplate: { ja: '1日{n}本のペースを設定に反映', en: 'Apply {n}/day to Your Settings' },
       dailyLineTemplate: { ja: '1日あたり {n}本', en: 'Per day: {n} candles' },
-      dailyLineDetailTemplate: { ja: '　(獲得 {gained}本 − ハート消費 {cost}本)', en: ' (gained {gained} candles − Heart cost {cost} candles)' },
+      dailyLineTemplateOne: { ja: '1日あたり {n}本', en: 'Per day: {n} candle' },
+      dailyLineDetailTemplate: { ja: '　(獲得 {gained}本 − ハート消費 {cost}本)', en: ' (gained {gained} {gainedUnit} − Heart cost {cost} {costUnit})' },
       progressLineTemplate: { ja: '進捗 {pct}%', en: 'Progress {pct}%' },
       footnoteTargetDate: { ja: '※目標日までの残り日数をもとにした目安です。実際の日付とは前後する場合があります。', en: '*This is an estimate based on the remaining days until your target date. The actual date may differ.' },
       warnHeart: { ja: '1日の収支がプラスにならないため、目標に到達できません。<br>集める本数か、送るハートの本数を見直してください。', en: "Your daily balance isn't positive, so you won't reach your goal.<br>Review the amount you collect or the number of Hearts you send." },
       warnZero: { ja: '1日の獲得本数が0本のため計算できません。<br>集める本数のスライダーを見直してください。', en: "Your daily gain is 0 candles, so this can't be calculated.<br>Review the collection amount slider." },
       remainingBreakdownTemplate: { ja: '残り {remaining}本{usageNote}<br>{dailyLine}', en: 'Remaining {remaining} candles{usageNote}<br>{dailyLine}' },
+      remainingBreakdownTemplateOne: { ja: '残り {remaining}本{usageNote}<br>{dailyLine}', en: 'Remaining {remaining} candle{usageNote}<br>{dailyLine}' },
       heroDaysTemplate: { ja: 'あと {n}<span class="unit-small">日</span>', en: '{n}<span class="unit-small"> more days</span>' },
+      heroDaysTemplateOne: { ja: 'あと {n}<span class="unit-small">日</span>', en: '{n}<span class="unit-small"> more day</span>' },
       aboutWeeksTemplate: { ja: '（約{n}週間）', en: '(about {n} weeks)' },
       aboutWeeksTemplateOne: { ja: '（約{n}週間）', en: '(about {n} week)' },
       goalDateLineTemplate: { ja: '達成予定日　<strong>{date}</strong>頃', en: 'Estimated goal date: <strong>{date}</strong> (approx.)' },
@@ -1735,6 +1748,7 @@
       filterAllOption: { ja: 'すべての目標', en: 'All goals' },
       undoBtn: { ja: '取り消す', en: 'Undo' },
       amountTemplate: { ja: '{sign}{n}本', en: '{sign}{n} candles' },
+      amountTemplateOne: { ja: '{sign}{n}本', en: '{sign}{n} candle' },
       entryFillCurrent: { ja: '所持通貨から反映', en: 'Filled from owned currency' },
       entrySurvey: { ja: 'アンケート回答', en: 'Survey answered' },
       entryFinishToday: { ja: '今日の分を集め終わった', en: "Finished today's collection" },
@@ -3658,8 +3672,8 @@
       } else if (summary.achieved) {
         summaryHtml = t('goalMulti.summaryAchieved');
       } else {
-        summaryHtml = t('goalMulti.summaryRemainingTemplate', { remaining: fmt(summary.remaining), pct: summary.pct }) +
-          (summary.days !== null ? t('goalMulti.summaryDaysTemplate', { n: summary.days }) : '');
+        summaryHtml = t(summary.remaining === 1 ? 'goalMulti.summaryRemainingTemplateOne' : 'goalMulti.summaryRemainingTemplate', { remaining: fmt(summary.remaining), pct: summary.pct }) +
+          (summary.days !== null ? t(summary.days === 1 ? 'goalMulti.summaryDaysTemplateOne' : 'goalMulti.summaryDaysTemplate', { n: summary.days }) : '');
       }
       // この目標がペースを個別設定(dailyRateOverride)している場合、一覧上でも分かるよう
       // 小さなバッジを添える(⚡専用N本/日)。
@@ -4053,7 +4067,7 @@
             '<span class="history-time">' + historyTimeLabel(entry.time) + '</span>' +
             '<span class="history-label">' + (entry.labelKey ? t(entry.labelKey) : entry.label) + '</span>' +
           '</div>' +
-          '<span class="history-amount' + (isPlus ? ' is-plus' : ' is-minus') + '">' + t('history.amountTemplate', { sign: sign, n: fmt(Math.abs(entry.amount)) }) + '</span>' +
+          '<span class="history-amount' + (isPlus ? ' is-plus' : ' is-minus') + '">' + t(Math.abs(entry.amount) === 1 ? 'history.amountTemplateOne' : 'history.amountTemplate', { sign: sign, n: fmt(Math.abs(entry.amount)) }) + '</span>' +
           '<button type="button" class="history-undo-btn" data-history-id="' + entry.id + '">' + t('history.undoBtn') + '</button>' +
         '</div>';
       }).join('');
@@ -4832,8 +4846,8 @@
 
     var sliderPct = (globalDailyRate / 25) * 100;
     els.dailyRate.style.setProperty('--fill', sliderPct + '%');
-    els.dailyRateReadout.textContent = t('pace.dailyRateReadout', { n: globalDailyRate }) + (globalDailyRate === 20 ? t('pace.ashRouteNote') : '');
-    els.finishTodayBtn.innerHTML = t('pace.finishTodayBtn', { n: dailyRate });
+    els.dailyRateReadout.textContent = t(globalDailyRate === 1 ? 'pace.dailyRateReadoutOne' : 'pace.dailyRateReadout', { n: globalDailyRate }) + (globalDailyRate === 20 ? t('pace.ashRouteNote') : '');
+    els.finishTodayBtn.innerHTML = t(dailyRate === 1 ? 'pace.finishTodayBtnOne' : 'pace.finishTodayBtn', { n: dailyRate });
     els.finishTodayBtn.disabled = dailyRate <= 0;
     updateGoalPaceOverrideVisibility();
 
@@ -4843,10 +4857,10 @@
     els.candleFill.style.height = progressPct + '%';
 
     var remaining = effectiveTarget - current;
-    var usageNote = plannedUsage > 0 ? t('result.usageNote', { amount: fmt(plannedUsage) }) : '';
+    var usageNote = plannedUsage > 0 ? t(plannedUsage === 1 ? 'result.usageNoteOne' : 'result.usageNote', { amount: fmt(plannedUsage) }) : '';
     var html = '';
-    var dailyLine = t('result.dailyLineTemplate', { n: fmt(totalDaily) }) +
-      (heartCost > 0 ? t('result.dailyLineDetailTemplate', { gained: fmt(dailyRate), cost: fmt(heartCost) }) : '');
+    var dailyLine = t(totalDaily === 1 ? 'result.dailyLineTemplateOne' : 'result.dailyLineTemplate', { n: fmt(totalDaily) }) +
+      (heartCost > 0 ? t('result.dailyLineDetailTemplate', { gained: fmt(dailyRate), cost: fmt(heartCost), gainedUnit: t(dailyRate === 1 ? 'goal.unitOne' : 'goal.unit'), costUnit: t(heartCost === 1 ? 'goal.unitOne' : 'goal.unit') }) : '');
 
     // 目標日(任意)が設定されている場合、期日までに必要な1日ペースを算出する。
     // 期日が未入力・過去日・目標達成済みの場合は算出しない(=スライダーの見込みを表示する通常モードにフォールバック)。
@@ -4869,7 +4883,7 @@
     } else if (remaining <= 0) {
       html =
         '<p class="state-message achieved">' + t('result.achieved') + '</p>' +
-        '<p class="breakdown">' + t('result.achievedBreakdown', { current: fmt(current), target: fmt(effectiveTarget), usageNote: usageNote }) + '</p>';
+        '<p class="breakdown">' + t('result.achievedBreakdown', { current: fmt(current), target: fmt(effectiveTarget), usageNote: usageNote, currentUnit: t(current === 1 ? 'goal.unitOne' : 'goal.unit'), targetUnit: t(effectiveTarget === 1 ? 'goal.unitOne' : 'goal.unit') }) + '</p>';
     } else if (hasTargetDate) {
       // 目標日が設定されている場合は、そこから逆算した「1日に必要な本数」を主結果として表示する。
       // スライダーの値を設定していなくても、目標日さえ入れれば必要なペースが分かるようにする。
@@ -4881,13 +4895,13 @@
       // ハンドラ参照)。間に合っている場合は変更を促す必要がないため表示しない。
       var neededPaceClamped = Math.max(0, Math.min(25, Math.ceil(requiredDailyPace)));
       html =
-        '<div class="hero-stat">' + t('result.heroDailyPaceTemplate', { n: fmt(requiredDailyPace) }) + '</div>' +
+        '<div class="hero-stat">' + t(requiredDailyPace === 1 ? 'result.heroDailyPaceTemplateOne' : 'result.heroDailyPaceTemplate', { n: fmt(requiredDailyPace) }) + '</div>' +
         '<p class="stat-line">' + t('result.paceNeededByTemplate', { date: jpDate(targetDateObj) }) + '</p>' +
-        '<p class="stat-line">' + t('result.remainingLineTemplate', { remaining: fmt(remaining), usageNote: usageNote }) + '</p>' +
+        '<p class="stat-line">' + t(remaining === 1 ? 'result.remainingLineTemplateOne' : 'result.remainingLineTemplate', { remaining: fmt(remaining), usageNote: usageNote }) + '</p>' +
         '<div class="target-date-box">' +
-          t('result.currentPaceLabelTemplate', { n: fmt(dailyRate) }) +
+          t(dailyRate === 1 ? 'result.currentPaceLabelTemplateOne' : 'result.currentPaceLabelTemplate', { n: fmt(dailyRate) }) +
           '<span class="' + (isOnPace ? 'pace-ok' : 'pace-warn') + '">' +
-          (isOnPace ? t('result.paceOk') : t('result.paceWarnTemplate', { n: fmt(requiredDailyPace - dailyRate) })) +
+          (isOnPace ? t('result.paceOk') : t((requiredDailyPace - dailyRate) === 1 ? 'result.paceWarnTemplateOne' : 'result.paceWarnTemplate', { n: fmt(requiredDailyPace - dailyRate) })) +
           '</span>' +
           (isOnPace ? '' : '<br><button type="button" class="apply-required-pace-btn" id="applyRequiredPaceBtn" data-pace="' + neededPaceClamped + '">' + t('result.applyRequiredPaceBtnTemplate', { n: neededPaceClamped }) + '</button>') +
         '</div>' +
@@ -4900,7 +4914,7 @@
       var warnMsg = heartCost > 0 ? t('result.warnHeart') : t('result.warnZero');
       html =
         '<p class="state-message warning">' + warnMsg + '</p>' +
-        '<p class="breakdown">' + t('result.remainingBreakdownTemplate', { remaining: fmt(remaining), usageNote: usageNote, dailyLine: dailyLine }) + '</p>';
+        '<p class="breakdown">' + t(remaining === 1 ? 'result.remainingBreakdownTemplateOne' : 'result.remainingBreakdownTemplate', { remaining: fmt(remaining), usageNote: usageNote, dailyLine: dailyLine }) + '</p>';
     } else {
       var daysNeeded = Math.ceil(remaining / totalDaily);
       var weeksNeeded = Math.floor(daysNeeded / 7);
@@ -4913,10 +4927,10 @@
       var estDateValid = !isNaN(estDate.getTime());
       var goalDateLineHtml = estDateValid ? t('result.goalDateLineTemplate', { date: jpDate(estDate) }) : t('result.goalDateTooFarTemplate');
       html =
-        '<div class="hero-stat">' + t('result.heroDaysTemplate', { n: daysNeeded }) + '</div>' +
+        '<div class="hero-stat">' + t(daysNeeded === 1 ? 'result.heroDaysTemplateOne' : 'result.heroDaysTemplate', { n: daysNeeded }) + '</div>' +
         (weeksNeeded > 0 ? '<p class="stat-line">' + t(weeksNeeded === 1 ? 'result.aboutWeeksTemplateOne' : 'result.aboutWeeksTemplate', { n: weeksNeeded }) + '</p>' : '') +
         '<p class="stat-line">' + goalDateLineHtml + '</p>' +
-        '<p class="stat-line">' + t('result.remainingLineTemplate', { remaining: fmt(remaining), usageNote: usageNote }) + '</p>' +
+        '<p class="stat-line">' + t(remaining === 1 ? 'result.remainingLineTemplateOne' : 'result.remainingLineTemplate', { remaining: fmt(remaining), usageNote: usageNote }) + '</p>' +
         '<p class="breakdown">' +
           dailyLine + '<br>' +
           t('result.progressLineTemplate', { pct: Math.round(progressPct) }) +
