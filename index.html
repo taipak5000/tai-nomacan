@@ -788,6 +788,9 @@
   .pf-row-confirm-text { flex: 1; font-size: 12.5px; color: var(--text); line-height: 1.4; }
   .pf-row-btn-ok { background: var(--amber); color: #fff; border: none; font-weight: 700; }
   .pf-row-btn-danger { background: var(--red); color: #fff; border: none; }
+  /* .pf-icon-btn:hover (0,2,0)がこの後の.pf-row-btn-danger単体(0,1,0)より詳細度で勝ってしまい、
+     削除系ボタンhover時に赤背景がcreamに戻って白文字が読めなくなるのを防ぐための明示ルール */
+  .pf-icon-btn.pf-row-btn-danger:hover { background: var(--red); color: #fff; }
 
   /* ═══ サイドバーレイアウト ═══ */
   .app-layout { display: flex; gap: 20px; align-items: flex-start; width: 100%; }
@@ -1504,6 +1507,7 @@
       closeBtn: { ja: '閉じる', en: 'Close' },
       backupOpenBtn: { ja: 'データのバックアップ・復元・削除', en: 'Backup / restore / erase data' },
       titlesToggleTemplate: { ja: '{count}個の称号', en: '{count} titles' },
+      titlesToggleTemplateOne: { ja: '{count}個の称号', en: '{count} title' },
       titlesEmptyState: { ja: 'まだ称号を獲得していません', en: 'No titles earned yet' }
     },
     currency: {
@@ -1716,6 +1720,7 @@
       remainingBreakdownTemplate: { ja: '残り {remaining}本{usageNote}<br>{dailyLine}', en: 'Remaining {remaining} candles{usageNote}<br>{dailyLine}' },
       heroDaysTemplate: { ja: 'あと {n}<span class="unit-small">日</span>', en: '{n}<span class="unit-small"> more days</span>' },
       aboutWeeksTemplate: { ja: '（約{n}週間）', en: '(about {n} weeks)' },
+      aboutWeeksTemplateOne: { ja: '（約{n}週間）', en: '(about {n} week)' },
       goalDateLineTemplate: { ja: '達成予定日　<strong>{date}</strong>頃', en: 'Estimated goal date: <strong>{date}</strong> (approx.)' },
       goalDateTooFarTemplate: { ja: '達成予定日　<strong>計算できないほど遠い未来です</strong>', en: 'Estimated goal date: <strong>too far in the future to estimate</strong>' },
       footnoteDaily: { ja: '※1日ごとの獲得ペースをもとにした目安です。実際の日付とは前後する場合があります。', en: '*This is an estimate based on your gain rate per day. The actual date may differ.' }
@@ -1742,6 +1747,7 @@
     streak: {
       activeTemplate: { ja: '<svg class="inline-icon" width="15" height="15"><use href="#i-flame"/></svg> 連続{n}日目の記録中', en: '<svg class="inline-icon" width="15" height="15"><use href="#i-flame"/></svg> Day {n} of your streak' },
       bestSuffixTemplate: { ja: '（最長 {n}日）', en: ' (Best: {n} days)' },
+      bestSuffixTemplateOne: { ja: '（最長 {n}日）', en: ' (Best: {n} day)' },
       emptyText: { ja: '記録するとストリークが貯まります。今日の分を記録してみましょう。', en: 'Start recording to build a streak — try logging today\'s collection.' },
       heatmapLabel: { ja: '記録カレンダー(直近{weeks}週間)', en: 'Activity Calendar (last {weeks} weeks)' },
       heatmapAriaLabel: { ja: '連続記録日数のカレンダーヒートマップ', en: 'Calendar heatmap of your recording activity' },
@@ -2812,7 +2818,7 @@
     }).join('') : '<div class="pf-titles-empty">' + t('profile.titlesEmptyState') + '</div>';
     return '<div class="pf-titles-row">' +
       '<button type="button" class="pf-titles-toggle" aria-expanded="' + (expanded ? 'true' : 'false') + '" aria-controls="' + bodyId + '" onclick="pfToggleTitles(\'' + p.id + '\')">' +
-      '<span><svg class="inline-icon" width="13" height="13"><use href="#i-trophy"/></svg> ' + t('profile.titlesToggleTemplate', { count: total }) + '</span>' +
+      '<span><svg class="inline-icon" width="13" height="13"><use href="#i-trophy"/></svg> ' + t(total === 1 ? 'profile.titlesToggleTemplateOne' : 'profile.titlesToggleTemplate', { count: total }) + '</span>' +
       '<span class="pf-titles-caret"><svg class="inline-icon" width="13" height="13"><use href="#i-chevron-down"/></svg></span>' +
       '</button>' +
       '<div class="pf-titles-body" id="' + bodyId + '"' + (expanded ? '' : ' style="display:none;"') + '>' + bodyHtml + '</div>' +
@@ -4216,7 +4222,7 @@
     if (!el) return;
     var s = loadStreak();
     var live = streakCurrentLive(s);
-    var bestSuffix = s.longest > 0 ? t('streak.bestSuffixTemplate', { n: s.longest }) : '';
+    var bestSuffix = s.longest > 0 ? t(s.longest === 1 ? 'streak.bestSuffixTemplateOne' : 'streak.bestSuffixTemplate', { n: s.longest }) : '';
     if (live > 0) {
       el.classList.remove('is-empty');
       el.innerHTML = '<span class="streak-main">' + t('streak.activeTemplate', { n: live }) + '</span>' +
@@ -4455,7 +4461,7 @@
     if (!el) return;
     var s = loadQuestStreak();
     var live = questStreakCurrentLive(s);
-    var bestSuffix = s.longest > 0 ? t('streak.bestSuffixTemplate', { n: s.longest }) : '';
+    var bestSuffix = s.longest > 0 ? t(s.longest === 1 ? 'streak.bestSuffixTemplateOne' : 'streak.bestSuffixTemplate', { n: s.longest }) : '';
     if (live > 0) {
       el.classList.remove('is-empty');
       el.innerHTML = '<span class="streak-main">' + t('streak.activeTemplate', { n: live }) + '</span>' +
@@ -4908,7 +4914,7 @@
       var goalDateLineHtml = estDateValid ? t('result.goalDateLineTemplate', { date: jpDate(estDate) }) : t('result.goalDateTooFarTemplate');
       html =
         '<div class="hero-stat">' + t('result.heroDaysTemplate', { n: daysNeeded }) + '</div>' +
-        (weeksNeeded > 0 ? '<p class="stat-line">' + t('result.aboutWeeksTemplate', { n: weeksNeeded }) + '</p>' : '') +
+        (weeksNeeded > 0 ? '<p class="stat-line">' + t(weeksNeeded === 1 ? 'result.aboutWeeksTemplateOne' : 'result.aboutWeeksTemplate', { n: weeksNeeded }) + '</p>' : '') +
         '<p class="stat-line">' + goalDateLineHtml + '</p>' +
         '<p class="stat-line">' + t('result.remainingLineTemplate', { remaining: fmt(remaining), usageNote: usageNote }) + '</p>' +
         '<p class="breakdown">' +
@@ -5236,7 +5242,13 @@
     presets.push({ label: t('goal.presetOneWeek'), dateStr: formatDateValue(new Date(now.getTime() + 7 * 86400000)) });
     presets.push({ label: t('goal.presetTwoWeeks'), dateStr: formatDateValue(new Date(now.getTime() + 14 * 86400000)) });
     var oneMonthLater = new Date(now);
+    var oneMonthLaterTargetDay = oneMonthLater.getDate();
     oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+    // 月末日(29〜31日)は翌月に同じ日が存在せず自動繰り上がりするため、
+    // その場合は繰り上がり後の月の0日目(=本来の翌月の末日)にクランプする
+    if (oneMonthLater.getDate() !== oneMonthLaterTargetDay) {
+      oneMonthLater.setDate(0);
+    }
     presets.push({ label: t('goal.presetOneMonth'), dateStr: formatDateValue(oneMonthLater) });
     dateQuickPresetsEl.innerHTML = presets.map(function (p) {
       return '<button type="button" class="fill-current-btn date-quick-preset-btn" data-date="' + p.dateStr + '">' + pfEscapeHtml(p.label) + '</button>';
