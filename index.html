@@ -2166,7 +2166,7 @@
       // 既定プロフィールを削除する場合は、nsKey()が接尾辞なしで返すこのファイル内の
       // 既知キーを個別に対象へ追加する。
       if (id === DEFAULT_PROFILE_ID) {
-        ['wishOwnCurrency', 'skyCurrencyExtra_v1', 'skyNomacanGoals_v1', 'skyNomacanCalc_v1', 'skyNomacanCalc_history_v1', 'dailyQuestLog_v1', 'dailyQuestStreak_v1'].forEach(function (rawKey) {
+        ['wishOwnCurrency', 'skyCurrencyExtra_v1', 'skyNomacanGoals_v1', 'skyNomacanCalc_v1', 'skyNomacanCalc_history_v1', 'dailyQuestLog_v1', 'dailyQuestStreak_v1', 'skyNomacanStreak_v1', 'skyNomacanTitles_v1', 'oneYearAgoBannerDismissedDate_v1'].forEach(function (rawKey) {
           if (toRemove.indexOf(rawKey) === -1) toRemove.push(rawKey);
         });
       }
@@ -4659,7 +4659,7 @@
     if (!el || nomaToastQueue.length === 0) { nomaToastBusy = false; return; }
     nomaToastBusy = true;
     var msg = nomaToastQueue.shift();
-    el.textContent = msg;
+    el.innerHTML = msg; // メッセージにはTITLES定義由来の(信頼できる)SVGアイコンHTMLが含まれるためinnerHTMLで描画する
     el.classList.add('show');
     clearTimeout(nomaToastTimer);
     nomaToastTimer = setTimeout(function () {
