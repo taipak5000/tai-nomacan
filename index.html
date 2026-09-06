@@ -4119,6 +4119,12 @@
     }
     var effectiveTarget = target + plannedUsage;
     var W = 300, H = 84, padX = 4, padY = 10;
+    // バグ修正: このSVGはpreserveAspectRatio="none"で縦横を別々に引き伸ばして
+    // カード幅いっぱいに表示するため、テキスト要素もそのまま描画すると文字が
+    // 横に潰れて伸びてしまう。実際の表示幅から縦横の伸び率の差を求め、
+    // ラベルにだけ逆方向のscaleを掛けて潰れを打ち消す。
+    var renderedW = wrap.getBoundingClientRect().width || W;
+    var textUnstretchX = (72 * W) / (H * renderedW);
     var minT = points[0].time;
     var maxT = points[points.length - 1].time;
     var spanT = Math.max(1, maxT - minT);
@@ -4134,8 +4140,11 @@
     var targetLineSvg = '';
     if (effectiveTarget > 0 && effectiveTarget <= maxV) {
       var ty = yOf(effectiveTarget).toFixed(1);
-      targetLineSvg = '<line x1="' + padX + '" y1="' + ty + '" x2="' + (W - padX) + '" y2="' + ty + '" stroke="var(--amber-deep)" stroke-width="1" stroke-dasharray="4 3" opacity="0.75" />' +
-        '<text x="' + (W - padX) + '" y="' + Math.max(8, parseFloat(ty) - 3) + '" text-anchor="end" font-size="8" fill="var(--amber-deep)">' + t('history.trendTargetLabel') + '</text>';
+      var labelAnchorX = W - padX;
+      targetLineSvg = '<line x1="' + padX + '" y1="' + ty + '" x2="' + labelAnchorX + '" y2="' + ty + '" stroke="var(--amber-deep)" stroke-width="1" stroke-dasharray="4 3" opacity="0.75" />' +
+        '<g transform="translate(' + labelAnchorX + ',0) scale(' + textUnstretchX.toFixed(4) + ',1) translate(-' + labelAnchorX + ',0)">' +
+        '<text x="' + labelAnchorX + '" y="' + Math.max(8, parseFloat(ty) - 3) + '" text-anchor="end" font-size="8" fill="var(--amber-deep)">' + t('history.trendTargetLabel') + '</text>' +
+        '</g>';
     }
     wrap.innerHTML =
       '<svg class="trend-chart-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="' + t('history.trendAriaLabel') + '">' +
