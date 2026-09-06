@@ -3672,7 +3672,7 @@
       } else if (summary.achieved) {
         summaryHtml = t('goalMulti.summaryAchieved');
       } else {
-        summaryHtml = t(summary.remaining === 1 ? 'goalMulti.summaryRemainingTemplateOne' : 'goalMulti.summaryRemainingTemplate', { remaining: fmt(summary.remaining), pct: summary.pct }) +
+        summaryHtml = t(isOnePlural(summary.remaining) ? 'goalMulti.summaryRemainingTemplateOne' : 'goalMulti.summaryRemainingTemplate', { remaining: fmt(summary.remaining), pct: summary.pct }) +
           (summary.days !== null ? t(summary.days === 1 ? 'goalMulti.summaryDaysTemplateOne' : 'goalMulti.summaryDaysTemplate', { n: summary.days }) : '');
       }
       // この目標がペースを個別設定(dailyRateOverride)している場合、一覧上でも分かるよう
@@ -3949,6 +3949,14 @@
   function fmt(n) {
     var r = Math.round(n * 100) / 100;
     return r.toLocaleString('ja-JP', { maximumFractionDigits: 2 });
+  }
+
+  // 単数/複数の出し分け用: fmt()と同じ丸め処理を経た値で1かどうかを判定する。
+  // 生の値(例: 1.001や0.999)をそのまま1と比較すると、fmt()で表示される値は
+  // 「1」なのに単数/複数の判定だけ丸め前の端数で行われてしまい、"1 candles"のような
+  // 文法崩れが起きるため、判定にも表示と同じ丸めを適用する。
+  function isOnePlural(n) {
+    return Math.round(n * 100) / 100 === 1;
   }
 
   function jpDate(date) {
@@ -4857,10 +4865,10 @@
     els.candleFill.style.height = progressPct + '%';
 
     var remaining = effectiveTarget - current;
-    var usageNote = plannedUsage > 0 ? t(plannedUsage === 1 ? 'result.usageNoteOne' : 'result.usageNote', { amount: fmt(plannedUsage) }) : '';
+    var usageNote = plannedUsage > 0 ? t(isOnePlural(plannedUsage) ? 'result.usageNoteOne' : 'result.usageNote', { amount: fmt(plannedUsage) }) : '';
     var html = '';
-    var dailyLine = t(totalDaily === 1 ? 'result.dailyLineTemplateOne' : 'result.dailyLineTemplate', { n: fmt(totalDaily) }) +
-      (heartCost > 0 ? t('result.dailyLineDetailTemplate', { gained: fmt(dailyRate), cost: fmt(heartCost), gainedUnit: t(dailyRate === 1 ? 'goal.unitOne' : 'goal.unit'), costUnit: t(heartCost === 1 ? 'goal.unitOne' : 'goal.unit') }) : '');
+    var dailyLine = t(isOnePlural(totalDaily) ? 'result.dailyLineTemplateOne' : 'result.dailyLineTemplate', { n: fmt(totalDaily) }) +
+      (heartCost > 0 ? t('result.dailyLineDetailTemplate', { gained: fmt(dailyRate), cost: fmt(heartCost), gainedUnit: t(dailyRate === 1 ? 'goal.unitOne' : 'goal.unit'), costUnit: t(isOnePlural(heartCost) ? 'goal.unitOne' : 'goal.unit') }) : '');
 
     // 目標日(任意)が設定されている場合、期日までに必要な1日ペースを算出する。
     // 期日が未入力・過去日・目標達成済みの場合は算出しない(=スライダーの見込みを表示する通常モードにフォールバック)。
@@ -4883,7 +4891,7 @@
     } else if (remaining <= 0) {
       html =
         '<p class="state-message achieved">' + t('result.achieved') + '</p>' +
-        '<p class="breakdown">' + t('result.achievedBreakdown', { current: fmt(current), target: fmt(effectiveTarget), usageNote: usageNote, currentUnit: t(current === 1 ? 'goal.unitOne' : 'goal.unit'), targetUnit: t(effectiveTarget === 1 ? 'goal.unitOne' : 'goal.unit') }) + '</p>';
+        '<p class="breakdown">' + t('result.achievedBreakdown', { current: fmt(current), target: fmt(effectiveTarget), usageNote: usageNote, currentUnit: t(isOnePlural(current) ? 'goal.unitOne' : 'goal.unit'), targetUnit: t(isOnePlural(effectiveTarget) ? 'goal.unitOne' : 'goal.unit') }) + '</p>';
     } else if (hasTargetDate) {
       // 目標日が設定されている場合は、そこから逆算した「1日に必要な本数」を主結果として表示する。
       // スライダーの値を設定していなくても、目標日さえ入れれば必要なペースが分かるようにする。
@@ -4895,13 +4903,13 @@
       // ハンドラ参照)。間に合っている場合は変更を促す必要がないため表示しない。
       var neededPaceClamped = Math.max(0, Math.min(25, Math.ceil(requiredDailyPace)));
       html =
-        '<div class="hero-stat">' + t(requiredDailyPace === 1 ? 'result.heroDailyPaceTemplateOne' : 'result.heroDailyPaceTemplate', { n: fmt(requiredDailyPace) }) + '</div>' +
+        '<div class="hero-stat">' + t(isOnePlural(requiredDailyPace) ? 'result.heroDailyPaceTemplateOne' : 'result.heroDailyPaceTemplate', { n: fmt(requiredDailyPace) }) + '</div>' +
         '<p class="stat-line">' + t('result.paceNeededByTemplate', { date: jpDate(targetDateObj) }) + '</p>' +
-        '<p class="stat-line">' + t(remaining === 1 ? 'result.remainingLineTemplateOne' : 'result.remainingLineTemplate', { remaining: fmt(remaining), usageNote: usageNote }) + '</p>' +
+        '<p class="stat-line">' + t(isOnePlural(remaining) ? 'result.remainingLineTemplateOne' : 'result.remainingLineTemplate', { remaining: fmt(remaining), usageNote: usageNote }) + '</p>' +
         '<div class="target-date-box">' +
           t(dailyRate === 1 ? 'result.currentPaceLabelTemplateOne' : 'result.currentPaceLabelTemplate', { n: fmt(dailyRate) }) +
           '<span class="' + (isOnPace ? 'pace-ok' : 'pace-warn') + '">' +
-          (isOnPace ? t('result.paceOk') : t((requiredDailyPace - dailyRate) === 1 ? 'result.paceWarnTemplateOne' : 'result.paceWarnTemplate', { n: fmt(requiredDailyPace - dailyRate) })) +
+          (isOnPace ? t('result.paceOk') : t(isOnePlural(requiredDailyPace - dailyRate) ? 'result.paceWarnTemplateOne' : 'result.paceWarnTemplate', { n: fmt(requiredDailyPace - dailyRate) })) +
           '</span>' +
           (isOnPace ? '' : '<br><button type="button" class="apply-required-pace-btn" id="applyRequiredPaceBtn" data-pace="' + neededPaceClamped + '">' + t('result.applyRequiredPaceBtnTemplate', { n: neededPaceClamped }) + '</button>') +
         '</div>' +
@@ -4914,7 +4922,7 @@
       var warnMsg = heartCost > 0 ? t('result.warnHeart') : t('result.warnZero');
       html =
         '<p class="state-message warning">' + warnMsg + '</p>' +
-        '<p class="breakdown">' + t(remaining === 1 ? 'result.remainingBreakdownTemplateOne' : 'result.remainingBreakdownTemplate', { remaining: fmt(remaining), usageNote: usageNote, dailyLine: dailyLine }) + '</p>';
+        '<p class="breakdown">' + t(isOnePlural(remaining) ? 'result.remainingBreakdownTemplateOne' : 'result.remainingBreakdownTemplate', { remaining: fmt(remaining), usageNote: usageNote, dailyLine: dailyLine }) + '</p>';
     } else {
       var daysNeeded = Math.ceil(remaining / totalDaily);
       var weeksNeeded = Math.floor(daysNeeded / 7);
@@ -4927,10 +4935,10 @@
       var estDateValid = !isNaN(estDate.getTime());
       var goalDateLineHtml = estDateValid ? t('result.goalDateLineTemplate', { date: jpDate(estDate) }) : t('result.goalDateTooFarTemplate');
       html =
-        '<div class="hero-stat">' + t(daysNeeded === 1 ? 'result.heroDaysTemplateOne' : 'result.heroDaysTemplate', { n: daysNeeded }) + '</div>' +
-        (weeksNeeded > 0 ? '<p class="stat-line">' + t(weeksNeeded === 1 ? 'result.aboutWeeksTemplateOne' : 'result.aboutWeeksTemplate', { n: weeksNeeded }) + '</p>' : '') +
+        '<div class="hero-stat">' + t(daysNeeded === 1 ? 'result.heroDaysTemplateOne' : 'result.heroDaysTemplate', { n: fmt(daysNeeded) }) + '</div>' +
+        (weeksNeeded > 0 ? '<p class="stat-line">' + t(weeksNeeded === 1 ? 'result.aboutWeeksTemplateOne' : 'result.aboutWeeksTemplate', { n: fmt(weeksNeeded) }) + '</p>' : '') +
         '<p class="stat-line">' + goalDateLineHtml + '</p>' +
-        '<p class="stat-line">' + t(remaining === 1 ? 'result.remainingLineTemplateOne' : 'result.remainingLineTemplate', { remaining: fmt(remaining), usageNote: usageNote }) + '</p>' +
+        '<p class="stat-line">' + t(isOnePlural(remaining) ? 'result.remainingLineTemplateOne' : 'result.remainingLineTemplate', { remaining: fmt(remaining), usageNote: usageNote }) + '</p>' +
         '<p class="breakdown">' +
           dailyLine + '<br>' +
           t('result.progressLineTemplate', { pct: Math.round(progressPct) }) +
