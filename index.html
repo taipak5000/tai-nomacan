@@ -300,6 +300,39 @@
   .survey-btn:hover { background: rgba(63,163,92,0.08); border-color: var(--green); }
   .heart-sent-btn { color: var(--red); border-color: rgba(184,68,37,0.3); }
   .heart-sent-btn:hover { background: rgba(184,68,37,0.08); border-color: var(--red); }
+
+  /* ○○本を任意に指定して所持本数から減らす行(固定量のクイックボタンでは対応できない
+     任意の消費量を記録するための入力欄。他の操作ボタンと同じ横並びrowだと幅が
+     取り合いになるため、quick-actions-rowとは別行にする) */
+  .adjust-amount-row { display: flex; gap: 8px; margin-top: 8px; }
+  .adjust-amount-input {
+    flex: 1; min-width: 0;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #FCFAF5;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+  }
+  :root[data-theme="dark"] .adjust-amount-input { background: var(--cream-deep); }
+  .adjust-amount-input::-webkit-outer-spin-button,
+  .adjust-amount-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .adjust-amount-input { -moz-appearance: textfield; }
+  .adjust-amount-input:focus { outline: none; border-color: var(--amber); box-shadow: 0 0 0 3px rgba(232,133,10,0.16); }
+  .subtract-amount-btn {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(184,68,37,0.3);
+    background: var(--cream);
+    color: var(--red);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .subtract-amount-btn:hover { background: rgba(184,68,37,0.08); border-color: var(--red); }
   #finishTodayBtn { margin-top: 10px; }
   .apply-required-pace-btn { color: var(--red); border-color: rgba(184,68,37,0.3); margin-top: 8px; }
   .apply-required-pace-btn:hover { background: rgba(184,68,37,0.08); border-color: var(--red); }
@@ -1271,6 +1304,10 @@
         <button type="button" class="survey-btn" id="surveyBtn" data-i18n="goal.surveyBtn">アンケートに回答した(+3本)</button>
         <button type="button" class="heart-sent-btn" id="heartSentBtn" data-i18n="goal.heartSentBtn">ハートを送った(-3本)</button>
       </div>
+      <div class="adjust-amount-row">
+        <input type="number" id="subtractAmount" inputmode="decimal" min="0" step="1" class="adjust-amount-input" data-i18n-placeholder="goal.subtractAmountPlaceholder" placeholder="例: 10">
+        <button type="button" class="subtract-amount-btn" id="subtractAmountBtn" data-i18n="goal.subtractAmountBtn">その分を減らす</button>
+      </div>
     </div>
     <div class="field">
       <label for="targetDateTrigger" data-i18n="goal.targetDateLabel">目標日(任意)</label>
@@ -1675,6 +1712,8 @@
       fillCurrentBtn: { ja: '所持通貨から反映', en: 'Fill from Owned Currency' },
       surveyBtn: { ja: 'アンケートに回答した(+3本)', en: 'Answered the Survey (+3 candles)' },
       heartSentBtn: { ja: 'ハートを送った(-3本)', en: 'Sent a Heart (-3 candles)' },
+      subtractAmountPlaceholder: { ja: '例: 10', en: 'e.g. 10' },
+      subtractAmountBtn: { ja: 'その分を減らす', en: 'Subtract' },
       targetDateLabel: { ja: '目標日(任意)', en: 'Target Date (optional)' },
       unit: { ja: '本', en: 'candles' },
       unitOne: { ja: '本', en: 'candle' },
@@ -1783,6 +1822,7 @@
       entryFillCurrent: { ja: '所持通貨から反映', en: 'Filled from owned currency' },
       entrySurvey: { ja: 'アンケート回答', en: 'Survey answered' },
       entryHeartSent: { ja: 'ハートを送った', en: 'Sent a heart' },
+      entryManualSubtract: { ja: '手動で減らした', en: 'Manually subtracted' },
       entryFinishToday: { ja: '今日の分を集め終わった', en: "Finished today's collection" },
       entryManualEdit: { ja: '本数を直接入力', en: 'Entered amount directly' },
       confirmClear: { ja: '獲得履歴をすべて消去します。よろしいですか？(所持本数自体は変わりません)', en: "This will clear all history. Are you sure? (Your current amount won't change.)" },
@@ -4093,6 +4133,8 @@
     fillCurrentBtn: document.getElementById('fillCurrentBtn'),
     surveyBtn: document.getElementById('surveyBtn'),
     heartSentBtn: document.getElementById('heartSentBtn'),
+    subtractAmount: document.getElementById('subtractAmount'),
+    subtractAmountBtn: document.getElementById('subtractAmountBtn'),
     finishTodayBtn: document.getElementById('finishTodayBtn'),
     candleFill: document.getElementById('candleFill'),
     resultContent: document.getElementById('resultContent'),
@@ -5289,6 +5331,29 @@
     syncCurrentToSharedCurrency();
     addHistoryEntry('history.entryHeartSent', delta);
     syncCommittedCurrent();
+  });
+
+  // 「その分を減らす」ボタン: 固定量のクイックボタン(ハートを送った等)では対応できない
+  // 任意の消費量(例: 精霊ツリー解放に使った分)を、入力した本数だけ所持本数から減算する。
+  // 0以下・未入力・数値でない場合は何もしない(誤操作で履歴が汚れるのを防ぐ)。
+  function subtractEnteredAmount() {
+    clearCurrentCommitTimer();
+    var amount = Math.max(0, parseFloat(els.subtractAmount.value) || 0);
+    if (amount <= 0) return;
+    var current = Math.max(0, parseFloat(els.current.value) || 0);
+    var newVal = Math.max(0, Math.round((current - amount) * 100) / 100);
+    var delta = Math.round((newVal - current) * 100) / 100;
+    els.current.value = newVal;
+    update();
+    saveState();
+    syncCurrentToSharedCurrency();
+    addHistoryEntry('history.entryManualSubtract', delta);
+    syncCommittedCurrent();
+    els.subtractAmount.value = ''; // 次の入力に備えて空にする
+  }
+  els.subtractAmountBtn.addEventListener('click', subtractEnteredAmount);
+  els.subtractAmount.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter') { ev.preventDefault(); subtractEnteredAmount(); }
   });
 
   // 「今日の分を集め終わった」ボタン: 「1日の集めペース」の本数をそのまま所持本数に加算する。
