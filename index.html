@@ -281,7 +281,7 @@
 
   .quick-actions-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 
-  .fill-current-btn, .survey-btn, .apply-required-pace-btn {
+  .fill-current-btn, .survey-btn, .heart-sent-btn, .apply-required-pace-btn {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 7px 12px;
     border: 1px solid var(--border);
@@ -298,6 +298,8 @@
   .fill-current-btn:disabled:hover { background: var(--cream); border-color: var(--border); }
   .survey-btn { color: var(--green); border-color: rgba(63,163,92,0.3); }
   .survey-btn:hover { background: rgba(63,163,92,0.08); border-color: var(--green); }
+  .heart-sent-btn { color: var(--red); border-color: rgba(184,68,37,0.3); }
+  .heart-sent-btn:hover { background: rgba(184,68,37,0.08); border-color: var(--red); }
   #finishTodayBtn { margin-top: 10px; }
   .apply-required-pace-btn { color: var(--red); border-color: rgba(184,68,37,0.3); margin-top: 8px; }
   .apply-required-pace-btn:hover { background: rgba(184,68,37,0.08); border-color: var(--red); }
@@ -583,7 +585,7 @@
 
   /* ═══ ミニ推移グラフ（獲得履歴からの所持本数の推移スパークライン） ═══ */
   .trend-chart-wrap { margin: 2px 0 16px; }
-  .trend-chart-svg { width: 100%; height: 72px; display: block; overflow: visible; }
+  .trend-chart-svg { width: 100%; height: 108px; display: block; overflow: visible; }
   .trend-chart-empty { font-size: 12.5px; color: var(--text-dim); padding: 2px 0 4px; }
 
   .history-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--border); }
@@ -1267,6 +1269,7 @@
       <div class="quick-actions-row">
         <button type="button" class="fill-current-btn" id="fillCurrentBtn" data-i18n="goal.fillCurrentBtn">所持通貨から反映</button>
         <button type="button" class="survey-btn" id="surveyBtn" data-i18n="goal.surveyBtn">アンケートに回答した(+3本)</button>
+        <button type="button" class="heart-sent-btn" id="heartSentBtn" data-i18n="goal.heartSentBtn">ハートを送った(-3本)</button>
       </div>
     </div>
     <div class="field">
@@ -1671,6 +1674,7 @@
       currentLabel: { ja: '所持本数', en: 'Current Amount' },
       fillCurrentBtn: { ja: '所持通貨から反映', en: 'Fill from Owned Currency' },
       surveyBtn: { ja: 'アンケートに回答した(+3本)', en: 'Answered the Survey (+3 candles)' },
+      heartSentBtn: { ja: 'ハートを送った(-3本)', en: 'Sent a Heart (-3 candles)' },
       targetDateLabel: { ja: '目標日(任意)', en: 'Target Date (optional)' },
       unit: { ja: '本', en: 'candles' },
       unitOne: { ja: '本', en: 'candle' },
@@ -1778,11 +1782,13 @@
       amountTemplateOne: { ja: '{sign}{n}本', en: '{sign}{n} candle' },
       entryFillCurrent: { ja: '所持通貨から反映', en: 'Filled from owned currency' },
       entrySurvey: { ja: 'アンケート回答', en: 'Survey answered' },
+      entryHeartSent: { ja: 'ハートを送った', en: 'Sent a heart' },
       entryFinishToday: { ja: '今日の分を集め終わった', en: "Finished today's collection" },
       entryManualEdit: { ja: '本数を直接入力', en: 'Entered amount directly' },
       confirmClear: { ja: '獲得履歴をすべて消去します。よろしいですか？(所持本数自体は変わりません)', en: "This will clear all history. Are you sure? (Your current amount won't change.)" },
       trendEmpty: { ja: 'まだ十分な履歴がないため、グラフは表示できません。', en: 'Not enough history yet to show a chart.' },
       trendTargetLabel: { ja: '目標', en: 'Target' },
+      trendYAxisLabel: { ja: '{n}本', en: '{n}' },
       trendAriaLabel: { ja: '所持本数の推移グラフ', en: 'Chart of your candle amount over time' }
     },
     streak: {
@@ -4086,6 +4092,7 @@
     heartsToSend: document.getElementById('heartsToSend'),
     fillCurrentBtn: document.getElementById('fillCurrentBtn'),
     surveyBtn: document.getElementById('surveyBtn'),
+    heartSentBtn: document.getElementById('heartSentBtn'),
     finishTodayBtn: document.getElementById('finishTodayBtn'),
     candleFill: document.getElementById('candleFill'),
     resultContent: document.getElementById('resultContent'),
@@ -4329,13 +4336,15 @@
       plannedUsage = Math.max(0, parseFloat(els.plannedUsage.value) || 0);
     }
     var effectiveTarget = target + plannedUsage;
-    var W = 300, H = 84, padX = 4, padY = 10;
-    // バグ修正: このSVGはpreserveAspectRatio="none"で縦横を別々に引き伸ばして
-    // カード幅いっぱいに表示するため、テキスト要素もそのまま描画すると文字が
-    // 横に潰れて伸びてしまう。実際の表示幅から縦横の伸び率の差を求め、
-    // ラベルにだけ逆方向のscaleを掛けて潰れを打ち消す。
-    var renderedW = wrap.getBoundingClientRect().width || W;
-    var textUnstretchX = (72 * W) / (H * renderedW);
+    // バグ修正: 以前はviewBoxを固定の300x84・preserveAspectRatio="none"にして
+    // カード幅いっぱいへ縦横別々に引き伸ばしていたため、カード幅が広い画面ほど
+    // グラフ全体が横に間延びして見えていた(84:300という固定比が実際の表示比と
+    // 大きくズレるため)。viewBoxの単位を実際の表示ピクセルに一致させることで
+    // 引き伸ばし自体を起こさないようにする(1単位=1表示px。Hは.trend-chart-svgの
+    // CSS heightと必ず一致させること)。
+    var H = 108;
+    var W = wrap.getBoundingClientRect().width || 300;
+    var padLeft = 26, padRight = 6, padTop = 14, padBottom = 16;
     var minT = points[0].time;
     var maxT = points[points.length - 1].time;
     var spanT = Math.max(1, maxT - minT);
@@ -4343,25 +4352,56 @@
     for (var i = 0; i < points.length; i++) { if (points[i].value > maxV) maxV = points[i].value; }
     if (effectiveTarget > 0 && effectiveTarget > maxV) maxV = effectiveTarget;
     maxV = (maxV || 1) * 1.08;
-    function xOf(t) { return padX + ((t - minT) / spanT) * (W - padX * 2); }
-    function yOf(v) { return H - padY - (v / maxV) * (H - padY * 2); }
+    function xOf(t) { return padLeft + ((t - minT) / spanT) * (W - padLeft - padRight); }
+    function yOf(v) { return H - padBottom - (v / maxV) * (H - padTop - padBottom); }
     var pathD = points.map(function (p, i) { return (i === 0 ? 'M' : 'L') + xOf(p.time).toFixed(1) + ',' + yOf(p.value).toFixed(1); }).join(' ');
     var last = points[points.length - 1];
-    var areaD = pathD + ' L' + xOf(last.time).toFixed(1) + ',' + (H - padY).toFixed(1) + ' L' + xOf(points[0].time).toFixed(1) + ',' + (H - padY).toFixed(1) + ' Z';
+    var areaD = pathD + ' L' + xOf(last.time).toFixed(1) + ',' + (H - padBottom).toFixed(1) + ' L' + xOf(points[0].time).toFixed(1) + ',' + (H - padBottom).toFixed(1) + ' Z';
+
+    // 📏 縦軸(所持本数)の目盛り線: 0〜maxVをおよそ3〜4段の「きりのいい」間隔に分割する
+    function niceStep(roughStep) {
+      if (roughStep <= 0) return 1;
+      var exponent = Math.floor(Math.log(roughStep) / Math.LN10);
+      var fraction = roughStep / Math.pow(10, exponent);
+      var niceFraction = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10;
+      return niceFraction * Math.pow(10, exponent);
+    }
+    var yStep = niceStep(maxV / 3);
+    var yTicksSvg = '';
+    for (var yv = 0; yv <= maxV - yStep * 0.01; yv += yStep) {
+      var gy = yOf(yv).toFixed(1);
+      yTicksSvg += '<line x1="' + padLeft + '" y1="' + gy + '" x2="' + (W - padRight).toFixed(1) + '" y2="' + gy + '" stroke="var(--border)" stroke-width="1" />' +
+        '<text x="' + (padLeft - 4) + '" y="' + (parseFloat(gy) + 3).toFixed(1) + '" text-anchor="end" font-size="8" fill="var(--text-dim)">' + t('history.trendYAxisLabel', { n: fmt(yv) }) + '</text>';
+    }
+
+    // 📅 横軸(日付)の目盛り: 履歴の最初・中間・最後の3時点の日付を表示する
+    function shortDateLabel(time) {
+      var d = new Date(time);
+      return (d.getMonth() + 1) + '/' + d.getDate();
+    }
+    var xTickTimes = [minT, minT + spanT / 2, maxT];
+    var xAnchors = ['start', 'middle', 'end'];
+    var xTicksSvg = '';
+    for (var xi = 0; xi < xTickTimes.length; xi++) {
+      var gx = xOf(xTickTimes[xi]).toFixed(1);
+      xTicksSvg += '<line x1="' + gx + '" y1="' + (H - padBottom).toFixed(1) + '" x2="' + gx + '" y2="' + (H - padBottom + 3).toFixed(1) + '" stroke="var(--text-dim)" stroke-width="1" />' +
+        '<text x="' + gx + '" y="' + (H - 3) + '" text-anchor="' + xAnchors[xi] + '" font-size="8" fill="var(--text-dim)">' + shortDateLabel(xTickTimes[xi]) + '</text>';
+    }
+
     var targetLineSvg = '';
     if (effectiveTarget > 0 && effectiveTarget <= maxV) {
       var ty = yOf(effectiveTarget).toFixed(1);
-      var labelAnchorX = W - padX;
-      targetLineSvg = '<line x1="' + padX + '" y1="' + ty + '" x2="' + labelAnchorX + '" y2="' + ty + '" stroke="var(--amber-deep)" stroke-width="1" stroke-dasharray="4 3" opacity="0.75" />' +
-        '<g transform="translate(' + labelAnchorX + ',0) scale(' + textUnstretchX.toFixed(4) + ',1) translate(-' + labelAnchorX + ',0)">' +
-        '<text x="' + labelAnchorX + '" y="' + Math.max(8, parseFloat(ty) - 3) + '" text-anchor="end" font-size="8" fill="var(--amber-deep)">' + t('history.trendTargetLabel') + '</text>' +
-        '</g>';
+      var labelAnchorX = W - padRight;
+      targetLineSvg = '<line x1="' + padLeft + '" y1="' + ty + '" x2="' + labelAnchorX + '" y2="' + ty + '" stroke="var(--amber-deep)" stroke-width="1" stroke-dasharray="4 3" opacity="0.75" />' +
+        '<text x="' + labelAnchorX + '" y="' + Math.max(8, parseFloat(ty) - 3) + '" text-anchor="end" font-size="8" fill="var(--amber-deep)">' + t('history.trendTargetLabel') + '</text>';
     }
     wrap.innerHTML =
-      '<svg class="trend-chart-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="' + t('history.trendAriaLabel') + '">' +
+      '<svg class="trend-chart-svg" viewBox="0 0 ' + W.toFixed(1) + ' ' + H + '" role="img" aria-label="' + t('history.trendAriaLabel') + '">' +
+        yTicksSvg +
         '<path d="' + areaD + '" fill="var(--amber-light)" opacity="0.18" stroke="none"/>' +
         '<path d="' + pathD + '" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
         targetLineSvg +
+        xTicksSvg +
         '<circle cx="' + xOf(last.time).toFixed(1) + '" cy="' + yOf(last.value).toFixed(1) + '" r="3" fill="var(--amber-deep)" />' +
       '</svg>';
   }
@@ -5233,6 +5273,21 @@
     saveState();
     syncCurrentToSharedCurrency();
     addHistoryEntry('history.entrySurvey', 3);
+    syncCommittedCurrent();
+  });
+
+  // 「ハートを送った」ボタン: 他プレイヤーへのハート送信コスト(3本)をそのまま減算する。
+  // 所持本数がマイナスにならないようMath.maxでクランプする(他の操作と同じガード)。
+  els.heartSentBtn.addEventListener('click', function () {
+    clearCurrentCommitTimer();
+    var current = Math.max(0, parseFloat(els.current.value) || 0);
+    var newVal = Math.max(0, Math.round((current - 3) * 100) / 100);
+    var delta = Math.round((newVal - current) * 100) / 100;
+    els.current.value = newVal;
+    update();
+    saveState();
+    syncCurrentToSharedCurrency();
+    addHistoryEntry('history.entryHeartSent', delta);
     syncCommittedCurrent();
   });
 
