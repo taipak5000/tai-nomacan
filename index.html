@@ -743,6 +743,11 @@
   .dash-calendar-chevron { margin-left: auto; font-size: 13px; color: var(--text-dim); transition: transform 0.2s ease; }
   .dash-calendar[open] .dash-calendar-summary { border-radius: 10px 10px 0 0; }
   .dash-calendar[open] .dash-calendar-chevron { transform: rotate(90deg); }
+  /* カレンダー本体の最大幅を固定（.pf-modal-cardは560px以上の画面幅で600pxまで
+     広がるが、7列グリッドをそのまま追従させるとaspect-ratio:1のセルが70px超に
+     肥大化し、特に.is-todayが不釣り合いに大きな塊に見えてしまうため、コンパクトな
+     カレンダーとして自然な幅で頭打ちにする） */
+  .dash-calendar { max-width: 360px; margin-left: auto; margin-right: auto; }
   .dash-cal-grid {
     display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;
     padding: 10px 11px; background: var(--cream); border-radius: 0 0 10px 10px;
@@ -751,8 +756,20 @@
   .dash-cal-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 6px; gap: 2px; }
   .dash-cal-day.is-pad { visibility: hidden; }
   .dash-cal-daynum { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--text); }
-  .dash-cal-day.is-today { background: var(--amber); }
-  .dash-cal-day.is-today .dash-cal-daynum { color: #fff; font-weight: 700; }
+  /* .is-todayは他のis-today表現（.date-picker-cell.is-today / .heatmap-cell.is-today）に
+     合わせ、ソリッド塗り+白文字ではなくインセットリング＋アクセント色文字にする。
+     以前はbackground: var(--amber)（#E8850A）に白文字・カテゴリドット(#eab308等)を
+     重ねていたため、WCAG式で実測すると白文字は約2.7:1（4.5:1未達）、ドットは
+     1.0〜1.4:1（3:1未達）と、今日のセルでだけ視認できなくなっていた。リング方式なら
+     背景は他の日と同じ--creamのままなので、ドットは他の日と同じ見え方を保ちつつ、
+     日付文字は--amber-deep（--cream/--cream-deep背景に対しWCAG式で実測5:1以上、
+     ライト・ダークモード双方で確認済み）を使うことで4.5:1以上を確保する。 */
+  .dash-cal-day.is-today { box-shadow: inset 0 0 0 1.5px var(--amber-deep); }
+  .dash-cal-day.is-today .dash-cal-daynum { color: var(--amber-deep); font-weight: 700; }
+  /* ドットの有無で1個(日付のみ)/2個(日付+ドット行)のflex子要素数が変わると、
+     column方向のjustify-content:centerの重心がズレて日付の縦位置が数pxブレるため、
+     ドットが無い日も高さ4pxの行自体は常に描画し、見た目のドットだけを省略する
+     （pfDashCalendarHtml側で常に<span class="dash-cal-dots">を出力） */
   .dash-cal-dots { display: flex; gap: 2px; height: 4px; }
   .dash-cal-dot { width: 4px; height: 4px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
   .dash-cal-dot.season { background: #eab308; }
@@ -2377,7 +2394,7 @@
   }
   function mfFocusableEls(container) {
     var nodes = container.querySelectorAll(
-      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'
     );
     return Array.prototype.filter.call(nodes, function (el) {
       return el.offsetWidth > 0 || el.offsetHeight > 0 || el === document.activeElement;
@@ -2706,9 +2723,9 @@
       var key = year + '-' + month + '-' + d;
       var cats = marks.get(key);
       var isToday = key === todayKey;
-      var dotsHtml = cats
-        ? '<span class="dash-cal-dots">' + CAT_ORDER.filter(function (c) { return cats.has(c); }).map(function (c) { return '<i class="dash-cal-dot ' + c + '"></i>'; }).join('') + '</span>'
-        : '';
+      var dotsHtml = '<span class="dash-cal-dots">' + (cats
+        ? CAT_ORDER.filter(function (c) { return cats.has(c); }).map(function (c) { return '<i class="dash-cal-dot ' + c + '"></i>'; }).join('')
+        : '') + '</span>';
       cellsHtml += '<div class="dash-cal-day' + (isToday ? ' is-today' : '') + '"><span class="dash-cal-daynum">' + d + '</span>' + dotsHtml + '</div>';
     }
     var monthLabel = LANG === 'ja' ? (year + '年' + (month + 1) + '月') : (MONTHS_EN[month] + ' ' + year);
@@ -2874,10 +2891,21 @@
       // 勝手に閉じてしまう。差し替え前に開閉状態を読み、差し替え後に復元する。
       var calWasOpen = body.querySelector('.dash-calendar');
       calWasOpen = calWasOpen && calWasOpen.open;
+      // キーボード/スクリーンリーダー利用者が#dashBody内の要素（現状はカレンダーの
+      // <summary>のみ）にフォーカスしている最中に毎秒のinnerHTML差し替えが走ると、
+      // 古い要素ごと破棄されてフォーカスがdocument.bodyへ抜け落ち、モーダルの
+      // フォーカストラップが実質的に破綻する。差し替え前にフォーカス位置を覚えておき、
+      // 差し替え後に同じ役割の新しい要素へフォーカスを戻す（開閉状態の復元と同じ考え方）。
+      var focusWasOnCalSummary = body.contains(document.activeElement) &&
+        document.activeElement.classList && document.activeElement.classList.contains('dash-calendar-summary');
       body.innerHTML = pfDashBuildHtml(pfDashCache);
       if (calWasOpen) {
         var cal = body.querySelector('.dash-calendar');
         if (cal) cal.open = true;
+      }
+      if (focusWasOnCalSummary) {
+        var newSummary = body.querySelector('.dash-calendar-summary');
+        if (newSummary) newSummary.focus();
       }
     }, 1000);
   }
