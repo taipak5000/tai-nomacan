@@ -2738,6 +2738,15 @@
     var marks = pfDashCalendarMarks(data, year, month);
     var todayKey = year + '-' + month + '-' + now.getDate();
     var CAT_ORDER = ['season', 'event', 'candle', 'revisit'];
+    // 🅼 各日のカテゴリは丸ドットの色だけで示されており、スクリーンリーダー利用者や
+    // 色の区別が難しい利用者には情報が一切伝わらない(凡例と違いテキストが無い)。
+    // 凡例と同じラベル文言を使って日付+カテゴリの説明文を組み立て、セルのtitle/aria-labelに
+    // 付与する(見た目は変えず、支援技術・マウスホバー向けのテキスト等価物を追加するだけ)。
+    var CAT_LABELS = {
+      season: t('dashboard.calLegendSeason'), event: t('dashboard.calLegendEvent'),
+      candle: t('dashboard.calLegendCandle'), revisit: t('dashboard.calLegendRevisit')
+    };
+    var monthNameOnly = LANG === 'en' ? MONTHS_EN[month] : (month + 1) + '月';
 
     var cellsHtml = '';
     for (var i = 0; i < startWeekday; i++) cellsHtml += '<div class="dash-cal-day is-pad"></div>';
@@ -2745,10 +2754,14 @@
       var key = year + '-' + month + '-' + d;
       var cats = marks.get(key);
       var isToday = key === todayKey;
+      var catList = cats ? CAT_ORDER.filter(function (c) { return cats.has(c); }).map(function (c) { return CAT_LABELS[c]; }) : [];
+      var dayLabel = (LANG === 'en' ? (monthNameOnly + ' ' + d) : (monthNameOnly + d + '日')) +
+        (catList.length ? ((LANG === 'en' ? ': ' : ': ') + catList.join(', ')) : '');
+      var dayLabelAttr = pfEscapeHtml(dayLabel);
       var dotsHtml = '<span class="dash-cal-dots">' + (cats
         ? CAT_ORDER.filter(function (c) { return cats.has(c); }).map(function (c) { return '<i class="dash-cal-dot ' + c + '"></i>'; }).join('')
         : '') + '</span>';
-      cellsHtml += '<div class="dash-cal-day' + (isToday ? ' is-today' : '') + '"><span class="dash-cal-daynum">' + d + '</span>' + dotsHtml + '</div>';
+      cellsHtml += '<div class="dash-cal-day' + (isToday ? ' is-today' : '') + '" title="' + dayLabelAttr + '" aria-label="' + dayLabelAttr + '"><span class="dash-cal-daynum">' + d + '</span>' + dotsHtml + '</div>';
     }
     var monthLabel = LANG === 'ja' ? (year + '年' + (month + 1) + '月') : (MONTHS_EN[month] + ' ' + year);
     var dowHtml = '';
@@ -2967,6 +2980,13 @@
     if (!pfDashLoading) pfDashLoading = pfDashLoadData();
     pfDashLoading.then(function (data) {
       pfDashCache = data;
+      // 初回フェッチが解決するまでの間にダッシュボードが閉じられている可能性がある
+      // (開いて即座に閉じた等)。キャッシュ自体は次回開いた時のために保存しつつ、
+      // 閉じていたら見えていない#dashBodyの再構築とタイマー起動はスキップする。
+      // これをしないと、閉じた後もタイマーだけが起動してしまい、次にダッシュボードを
+      // 開くまでバックグラウンドで毎秒動き続けるリークになる。
+      var stillOpen = document.getElementById('dashModalOverlay');
+      if (!stillOpen || !stillOpen.classList.contains('is-visible')) return;
       body.innerHTML = pfDashBuildHtml(data);
       pfDashStartTimer();
     }).catch(function (e) {
