@@ -976,9 +976,15 @@
     animation: none;
     transition: transform 0.32s cubic-bezier(0.25, 1, 0.5, 1);
   }
+  /* 🖥️ デスクトップ幅の共有規約: モーダルカードもページコンテナ(.wrap)と同じ
+     720px/960pxの2段階に統一する（姉妹サイト間の表記ゆれだった600px/560pxを是正。
+     設定モーダルの360px狭め表示はこのサイト独自の意図的な選択のため対象外・現状維持）。 */
+  .pf-modal-card { max-width: 720px; }
   @media (min-width: 560px) {
-    .pf-modal-card { max-width: 600px; }
     #settingsModalOverlay .pf-modal-card { max-width: 360px; }
+  }
+  @media (min-width: 850px) {
+    .pf-modal-card { max-width: 960px; }
   }
   .pf-modal-card.is-dragging, .pf-modal-card.js-anim { transition: none; animation: none; cursor: grabbing; user-select: none; }
   .pf-modal-card::before {
@@ -2375,8 +2381,9 @@
 
   /* ================================================================
      ♿ モーダルのフォーカス管理（プロフィール・目標・ダッシュボード・バックアップ・
-     ホーム画面アイコンカスタマイズ・表示設定の計6つの .pf-modal-overlay 共通の
-     1実装）。それぞれの開く/閉じる関数(pfOpenModal/pfCloseModal等)から
+     ホーム画面アイコンカスタマイズ・表示設定の6つの .pf-modal-overlay ＋
+     サイドバー（「ツール」ドロワー）の計7つのオーバーレイ共通の1実装）。
+     それぞれの開く/閉じる関数(pfOpenModal/pfCloseModal等)から
      mfOnModalOpen(overlayId)/mfOnModalClose(overlayId)を呼び出すだけで済む。
      - 開く時: モーダル内の最初のフォーカス可能要素へフォーカスを移す
        (無ければモーダルカード自体にtabindex="-1"を付けてフォーカスする)。
@@ -2388,12 +2395,19 @@
      その上に重ねて開かれることがあるため、「今開いている最前面のモーダル」は
      単純な直近1件のフラグではなく、closeTopmostOpenModal()と同じ
      DOM出現順(=同一z-indexでの重なり順)の優先度で判定する。
+     サイドバーだけ表示クラス名が他の6つ('is-visible')と異なる('sidebar-open')ため、
+     mfIsOverlayVisible()で吸収する(wingsのtrapStack方式と同じ狙いを、
+     このサイトの既存の優先順位リスト方式のまま拡張したもの)。
      ================================================================ */
-  var MF_MODAL_STACK_ORDER = ['settingsModalOverlay', 'iconCustomModal', 'dmModalOverlay', 'dashModalOverlay', 'goalModalOverlay', 'pfModalOverlay'];
+  var MF_MODAL_STACK_ORDER = ['settingsModalOverlay', 'iconCustomModal', 'dmModalOverlay', 'dashModalOverlay', 'goalModalOverlay', 'pfModalOverlay', 'sidebar'];
+  function mfIsOverlayVisible(overlayId) {
+    var el = document.getElementById(overlayId);
+    if (!el) return false;
+    return overlayId === 'sidebar' ? el.classList.contains('sidebar-open') : el.classList.contains('is-visible');
+  }
   function mfTopmostOverlayEl() {
     for (var i = 0; i < MF_MODAL_STACK_ORDER.length; i++) {
-      var el = document.getElementById(MF_MODAL_STACK_ORDER[i]);
-      if (el && el.classList.contains('is-visible')) return el;
+      if (mfIsOverlayVisible(MF_MODAL_STACK_ORDER[i])) return document.getElementById(MF_MODAL_STACK_ORDER[i]);
     }
     return null;
   }
@@ -2425,6 +2439,21 @@
     var trigger = mfTriggerEls[overlayId];
     delete mfTriggerEls[overlayId];
     if (trigger && typeof trigger.focus === 'function' && document.contains(trigger)) trigger.focus();
+  }
+  // 🔀 オーバーレイの相互排他: 表示設定／ダッシュボード／目標／プロフィール／
+  // サイドバー（「ツール」ドロワー）の5つは下部ドックやページ内バー・「?」
+  // ショートカットからいつでも独立して開けるため、他のどれかが開いたままもう1つを
+  // 開くとオーバーレイ同士が重なって見えてしまう。開く前に、開こうとしているもの
+  // 以外を閉じておく（各close関数は未オープン時は何もしない安全な関数）。
+  // バックアップ(dmModalOverlay)・アイコンカスタマイズ(iconCustomModal)は、
+  // これら5つのいずれかの中から開かれる子モーダルのため対象外のまま
+  // (dmはpfModalOverlayの上に重ねて開くのが意図的な挙動)。
+  function mfCloseOtherTopLevelOverlays(exceptId) {
+    if (exceptId !== 'settingsModalOverlay' && mfIsOverlayVisible('settingsModalOverlay')) settingsCloseModal();
+    if (exceptId !== 'dashModalOverlay' && mfIsOverlayVisible('dashModalOverlay')) pfDashClose();
+    if (exceptId !== 'goalModalOverlay' && mfIsOverlayVisible('goalModalOverlay')) goalCloseModal();
+    if (exceptId !== 'pfModalOverlay' && mfIsOverlayVisible('pfModalOverlay')) pfCloseModal();
+    if (exceptId !== 'sidebar' && mfIsOverlayVisible('sidebar')) closeSidebar();
   }
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Tab') return;
@@ -2697,19 +2726,27 @@
     // 代わりに、この月の描画で初めて登場した順にパレットを1色ずつ割り当てることで、
     // 同じ月内では異なる予定名が絶対に同じ色にならないことを保証する（月をまたいだ
     // 色の一貫性は失われるが、月内での判別可能性を優先する）。
+    // ⚠️ 再訪精霊(revisitSchedules)だけは、表示テキストが意図的に匿名化された
+    // 共通の「再訪精霊」固定文言のため、表示名をそのまま色のキーに使うと
+    // 元のスケジュールが別物であっても同じ色になってしまう(例: 14日周期の単独の
+    // 旅の精霊の再訪と、一回限りの来訪する精霊団の再訪が同じ月に重なって表示される
+    // 場合)。そのため、色を決めるキーだけは表示名とは別に、呼び出し側から渡された
+    // colorKey(スケジュールごとに一意な識別子)を使う。colorKeyを渡さない呼び出し
+    // (季節・イベント・キャンドル2倍。いずれも名前自体がすでに個別で衝突しない)は
+    // 従来通り表示名をそのままキーとして使う。
     var colorMap = new Map();
-    function colorFor(name) {
-      if (!colorMap.has(name)) colorMap.set(name, DASH_CAL_BAR_PALETTE[colorMap.size % DASH_CAL_BAR_PALETTE.length]);
-      return colorMap.get(name);
+    function colorFor(key) {
+      if (!colorMap.has(key)) colorMap.set(key, DASH_CAL_BAR_PALETTE[colorMap.size % DASH_CAL_BAR_PALETTE.length]);
+      return colorMap.get(key);
     }
-    function pushItems(schedule, name) {
+    function pushItems(schedule, name, colorKey) {
       pfDashOccurrencesInRange(schedule, rangeStart, rangeEnd).forEach(function (o) {
         var clipStart = o.start && o.start > rangeStart ? o.start : rangeStart;
         var clipEnd = o.end < rangeEnd ? o.end : rangeEnd;
         if (clipEnd < clipStart) return;
         items.push({
           name: name,
-          color: colorFor(name),
+          color: colorFor(colorKey === undefined ? name : colorKey),
           startDay: clipStart.getDate(),
           endDay: clipEnd.getDate(),
           // 実際の開始/終了がこの月の表示範囲内にあるかどうか（範囲外なら、その端は
@@ -2729,7 +2766,9 @@
     }
     (data.eventSchedule || []).forEach(function (ev) { pushItems(ev, pfDashLocalizeName(ev.name)); });
     (data.candleBonusSchedule || []).forEach(function (ev) { pushItems(ev, pfDashLocalizeName(ev.name)); });
-    (data.revisitSchedules || []).forEach(function (sch) { pushItems(sch, t('dashboard.revisitSpirit')); });
+    // colorKeyに配列インデックスを使い、表示名が同じ「再訪精霊」でも元のスケジュール
+    // オブジェクトが別物なら別の色になるようにする(表示テキスト自体は変更しない)。
+    (data.revisitSchedules || []).forEach(function (sch, idx) { pushItems(sch, t('dashboard.revisitSpirit'), 'revisit#' + idx); });
 
     // 開始日が早い順、同じ開始日なら長い予定を優先してレーンに割り当てる
     // （長い予定ほど上のレーンに固定されやすくなり、月をまたいでも位置が安定しやすい）
@@ -3005,6 +3044,11 @@
     if (pfDashTimer) { clearInterval(pfDashTimer); pfDashTimer = null; }
   }
   function pfDashOpen() {
+    // 既に開いている場合は何もしない（ここでガードしないとmfOnModalOpen側の
+    // トリガー参照がモーダル内の要素で上書きされ、閉じたときにフォーカスの
+    // 戻し先を見失う）
+    if (mfIsOverlayVisible('dashModalOverlay')) return;
+    mfCloseOtherTopLevelOverlays('dashModalOverlay');
     var overlay = document.getElementById('dashModalOverlay');
     if (overlay) overlay.classList.add('is-visible');
     mfOnModalOpen('dashModalOverlay');
@@ -3544,6 +3588,11 @@
   }
 
   function pfOpenModal() {
+    // 既に開いている場合は何もしない（ここでガードしないとmfOnModalOpen側の
+    // トリガー参照がモーダル内の要素で上書きされ、閉じたときにフォーカスの
+    // 戻し先を見失う）
+    if (mfIsOverlayVisible('pfModalOverlay')) return;
+    mfCloseOtherTopLevelOverlays('pfModalOverlay');
     pfEditingId = null;
     pfDeletingId = null;
     pfRenderModal();
@@ -3894,13 +3943,17 @@
     try { localStorage.setItem(SHORTCUTS_STORAGE_KEY, checked ? '1' : '0'); } catch (e) { /* noop */ }
   }
   function settingsOpenModal() {
+    // 既に開いている場合は何もしない（「?」ショートカットは他のモーダルが開いているか
+    // 確認せず呼ばれるため、ここでガードしないとmfOnModalOpen側のトリガー参照が
+    // モーダル内の要素で上書きされ、閉じたときにフォーカスの戻し先を見失う）
+    if (mfIsOverlayVisible('settingsModalOverlay')) return;
+    mfCloseOtherTopLevelOverlays('settingsModalOverlay'); // サイドバーが開いていた場合もこれで閉じられる
     updateThemeToggleUI();
     updateShortcutsCheckboxUI();
     updateLangButtonsUI();
     var overlay = document.getElementById('settingsModalOverlay');
     if (overlay) overlay.classList.add('is-visible');
     mfOnModalOpen('settingsModalOverlay');
-    closeSidebar();
   }
   function settingsCloseModal() {
     var overlay = document.getElementById('settingsModalOverlay');
@@ -4372,6 +4425,11 @@
     goalCloseModal();
   }
   function goalOpenModal() {
+    // 既に開いている場合は何もしない（ここでガードしないとmfOnModalOpen側の
+    // トリガー参照がモーダル内の要素で上書きされ、閉じたときにフォーカスの
+    // 戻し先を見失う）
+    if (mfIsOverlayVisible('goalModalOverlay')) return;
+    mfCloseOtherTopLevelOverlays('goalModalOverlay');
     goalEditingId = null;
     goalDeletingId = null;
     goalRenderModal();
@@ -4405,12 +4463,19 @@
   var sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
 
   function openSidebar() {
+    // 既に開いている場合は何もしない（ここでガードしないとmfOnModalOpen側の
+    // トリガー参照がドロワー内の要素で上書きされ、閉じたときにフォーカスの
+    // 戻し先を見失う）
+    if (sidebarEl.classList.contains('sidebar-open')) return;
+    mfCloseOtherTopLevelOverlays('sidebar');
     sidebarEl.classList.add('sidebar-open');
     sidebarOverlayEl.classList.add('is-visible');
+    mfOnModalOpen('sidebar');
   }
   function closeSidebar() {
     sidebarEl.classList.remove('sidebar-open');
     sidebarOverlayEl.classList.remove('is-visible');
+    mfOnModalClose('sidebar');
   }
   window.openSidebar = openSidebar; // サイトドックの「☰ ツール」ボタンから呼ばれる
   sidebarCloseBtn.addEventListener('click', closeSidebar);
