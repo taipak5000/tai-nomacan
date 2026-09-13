@@ -934,7 +934,13 @@
 
   /* ═══ サイトドック（画面下部固定クイックメニュー） ═══ */
   .site-dock {
-    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0;
+    /* 🩹 z-index: オーバーレイ背景(.pf-modal-overlay:1000 / .sidebar-overlay:499 /
+       .sidebar:500)より低いままだと、オーバーレイが開いている間ドックがクリックを
+       奪われ、別のドックアイコンをタップしても「現在のオーバーレイを閉じるだけ」に
+       なり、意図したオーバーレイへの一発切り替えができなかった。ドックは常にクリック
+       可能であるべきなので、全オーバーレイ背景より上に置く（companionと同じ対応）。 */
+    z-index: 1001;
     padding: 6px 10px calc(8px + env(safe-area-inset-bottom));
     background: var(--card-bg);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
@@ -963,6 +969,11 @@
   .pf-modal-overlay {
     background: rgba(0, 0, 0, calc(0.45 * var(--sheet-progress, 1)));
     align-items: flex-end; justify-content: center; padding: 0;
+    /* 🩹 サイトドックをオーバーレイより手前(z-index:1001)に上げたことで、ボトムシートが
+       画面最下部まで届くとカード下端(閉じるボタン等)がドックに隠れてクリックできなく
+       なってしまう。ドックの実測高さ(JSが--site-dock-hに反映)ぶんだけ下に余白を作り、
+       カードがドックと重ならないようにする。 */
+    padding-bottom: var(--site-dock-h, 76px);
     transition: background-color 0.32s cubic-bezier(0.25, 1, 0.5, 1);
   }
   .pf-modal-overlay.is-visible { animation: iosFade 0.32s cubic-bezier(0.25, 1, 0.5, 1); }
@@ -1532,10 +1543,11 @@
        よく使う4機能へのショートカット行。サイドバー自体の開閉やリンク一覧はそのまま。
        .wrap (position:relative; z-index:1) の内側に置くことで、.wrap内のモーダル
        (z-index:1000)・開いたサイドバー(z-index:500)と同じスタッキングコンテキストに
-       属させ、ドックのz-index:90より確実に手前に重なるようにしている。
-       (.wrapの外に置くと、ドックがルート側のスタッキングコンテキストで
-       z-index:90を持つ一方、モーダル等は.wrap全体としてz-index:1に閉じ込められる
-       ため、意図に反してドックがモーダルより手前に出てしまう) -->
+       属させている。ドック自体のz-index:1001はそれらより高いため、モーダルやサイドバー
+       が開いている間もドックは常に最前面でクリック可能（別のドックアイコンを押せば
+       今開いているオーバーレイを閉じて一発で切り替わる。詳細はサイトドックのCSS定義側の
+       コメント参照）。(.wrapの外に置いても最終的な前後関係は変わらないが、DOM構成を
+       変えない方が低リスクなためここに留めている) -->
   <nav class="site-dock" id="siteDock" data-i18n-aria-label="dock.ariaLabel" aria-label="クイックメニュー">
     <button type="button" onclick="pfOpenModal()">
       <span class="site-dock-icon" aria-hidden="true"><span class="icon-chip" style="width:28px; height:28px;"><svg width="22" height="22"><use href="#i-folder"/></svg></span></span>
@@ -6005,6 +6017,20 @@
     }).catch(function (e) { console.error('initDateQuickPresets', e); });
   }
 
+  // ═══ 🩹 サイトドックの実測高さ → --site-dock-h ═══
+  // サイトドックはオーバーレイより前面(z-index:1001)にあるため、ボトムシートモーダルの
+  // 下端がドックの実際の高さぶんだけ浮くよう、CSS変数に反映しておく（.pf-modal-overlayの
+  // padding-bottomで参照）。フォント読み込み後のレイアウト変化や画面回転(safe-area-inset-bottom
+  // の変化)にも追従できるよう、初期化時とresize時の両方で計測し直す。
+  function syncSiteDockHeightVar() {
+    if (!siteDockEl) return;
+    var h = siteDockEl.getBoundingClientRect().height;
+    if (h > 0) document.documentElement.style.setProperty('--site-dock-h', h + 'px');
+  }
+  var siteDockEl = document.getElementById('siteDock');
+  syncSiteDockHeightVar();
+  window.addEventListener('resize', syncSiteDockHeightVar);
+
   // ═══ ⚙️ 表示設定のキーボードショートカット（?・D・Esc）: taipak5000.github.io 配下の各ツール共通 ═══
   // '?'でこの設定を開く／'D'で外観モード切替(ライト→ダーク→システムの順で循環)／
   // Escで開いているモーダル(またはサイドバー)を閉じる。
@@ -6028,11 +6054,15 @@
     return false;
   }
 
+  // checkbox/radio/range/colorなどはテキストを入力できないため、フォーカスしていても
+  // 'isTyping'扱いにせず、'?'・'d'のショートカットを無効化しないようにする一覧
+  var NOMA_NON_TEXT_INPUT_TYPES = ['checkbox', 'radio', 'range', 'color', 'button', 'submit', 'reset', 'file', 'image', 'hidden'];
   document.addEventListener('keydown', function (e) {
     if (e.repeat) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     var target = e.target;
-    var isTyping = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable);
+    var isTextInput = target && target.tagName === 'INPUT' && NOMA_NON_TEXT_INPUT_TYPES.indexOf((target.type || '').toLowerCase()) === -1;
+    var isTyping = target && (isTextInput || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable);
 
     if (e.key === 'Escape') {
       closeTopmostOpenModal();
