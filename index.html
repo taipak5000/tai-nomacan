@@ -2445,15 +2445,20 @@
   // ショートカットからいつでも独立して開けるため、他のどれかが開いたままもう1つを
   // 開くとオーバーレイ同士が重なって見えてしまう。開く前に、開こうとしているもの
   // 以外を閉じておく（各close関数は未オープン時は何もしない安全な関数）。
-  // バックアップ(dmModalOverlay)・アイコンカスタマイズ(iconCustomModal)は、
-  // これら5つのいずれかの中から開かれる子モーダルのため対象外のまま
-  // (dmはpfModalOverlayの上に重ねて開くのが意図的な挙動)。
+  // バックアップ(dmModalOverlay)・アイコンカスタマイズ(iconCustomModal)は、これら5つの
+  // いずれかの中(または遷移元)から開かれる子モーダルのため、「開く前に他を閉じる」呼び出し元
+  // 側の対象外のまま(dmはpfModalOverlayの上に重ねて開くのが意図的な挙動)。ただし、この2つを
+  // 「閉じられる側」から漏らすと、例えばdm/iconCustomModalを開いたまま「?」で設定を開いた際に
+  // 設定とdm/iconCustomModalが同時に表示されたままになる相互排他漏れが起きる
+  // (実際にライブ確認で再現した)ため、この2つも必ずここに含める。
   function mfCloseOtherTopLevelOverlays(exceptId) {
     if (exceptId !== 'settingsModalOverlay' && mfIsOverlayVisible('settingsModalOverlay')) settingsCloseModal();
     if (exceptId !== 'dashModalOverlay' && mfIsOverlayVisible('dashModalOverlay')) pfDashClose();
     if (exceptId !== 'goalModalOverlay' && mfIsOverlayVisible('goalModalOverlay')) goalCloseModal();
     if (exceptId !== 'pfModalOverlay' && mfIsOverlayVisible('pfModalOverlay')) pfCloseModal();
     if (exceptId !== 'sidebar' && mfIsOverlayVisible('sidebar')) closeSidebar();
+    if (exceptId !== 'iconCustomModal' && mfIsOverlayVisible('iconCustomModal')) pfIconCloseModal();
+    if (exceptId !== 'dmModalOverlay' && mfIsOverlayVisible('dmModalOverlay')) dmCloseModal();
   }
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Tab') return;
@@ -3043,6 +3048,19 @@
   function pfDashStopTimer() {
     if (pfDashTimer) { clearInterval(pfDashTimer); pfDashTimer = null; }
   }
+  // 🎯 mfOnModalOpen()の初期フォーカスは、そのセッションで初めてダッシュボードを開いた瞬間には
+  // #dashBodyがまだ「読み込み中…」プレースホルダ(またはキャッシュ分岐でもまだ差し替え前の
+  // 旧内容)で実質フォーカス可能要素を持たないため、通知チェックボックス等モーダル内の
+  // 別要素に当たってしまう。実コンテンツ(カレンダー等)が描画された直後にこれを呼び、
+  // フォーカスが開いた瞬間のまま(=ユーザーがまだTab移動していない)なら実コンテンツの
+  // 先頭要素へ当て直す。pfDashCacheが既に温まっている(=よくある)同期パスと、初回フェッチを
+  // 待つ非同期パスの両方で同じ穴が起きるため、共通ヘルパーとして両方から呼ぶ。
+  function pfDashRefocusIfStillOnInitial(overlay, initialFocusEl) {
+    if (document.activeElement === initialFocusEl) {
+      var focusables = mfFocusableEls(overlay);
+      if (focusables.length) focusables[0].focus();
+    }
+  }
   function pfDashOpen() {
     // 既に開いている場合は何もしない（ここでガードしないとmfOnModalOpen側の
     // トリガー参照がモーダル内の要素で上書きされ、閉じたときにフォーカスの
@@ -3052,6 +3070,7 @@
     var overlay = document.getElementById('dashModalOverlay');
     if (overlay) overlay.classList.add('is-visible');
     mfOnModalOpen('dashModalOverlay');
+    var initialFocusEl = document.activeElement; // 下の再フォーカス判定で使う(同期・非同期どちらのパスでも)
     pfSyncReminderUI(); // ブラウザ側の通知許可状態が変わっている可能性があるため開くたびに再同期
     var body = document.getElementById('dashBody');
     if (pfDashCache) {
@@ -3062,6 +3081,11 @@
       body.innerHTML = pfDashBuildHtml(pfDashCache);
       pfDashRestorePostRenderState(body, reopenState);
       pfDashStartTimer();
+      // このセッションで初めての開く操作だと、直前のmfOnModalOpen()はまだ空だった#dashBody
+      // ではなく通知チェックボックス等に当たっている。今実コンテンツを描画したので当て直す
+      // (2回目以降の再オープンではpfDashRestorePostRenderStateが既に正しい要素へ戻しており、
+      // initialFocusElはその時点で既にDOMから外れた旧ノード参照になっているため何もしない)。
+      pfDashRefocusIfStillOnInitial(overlay, initialFocusEl);
       return;
     }
     body.innerHTML = '<p class="pf-hint">' + t('dashboard.loading') + '</p>';
@@ -3077,6 +3101,12 @@
       if (!stillOpen || !stillOpen.classList.contains('is-visible')) return;
       body.innerHTML = pfDashBuildHtml(data);
       pfDashStartTimer();
+      // 初回オープン時、mfOnModalOpen()による初期フォーカスはこのフェッチが解決する前に
+      // 同期的に実行済みのため、その時点でまだ空だった#dashBody内ではなく通知チェックボックス
+      // 等モーダル内の別要素に当たってしまっていた。実コンテンツ(カレンダー等)が描画された
+      // 今、フォーカス先を実コンテンツの先頭要素へ当て直す。ただし、フェッチ待ちの間に
+      // ユーザーが既に別の要素へTab移動していた場合はそのフォーカスを奪わない。
+      pfDashRefocusIfStillOnInitial(overlay, initialFocusEl);
     }).catch(function (e) {
       console.error('pfDashOpen', e);
       body.innerHTML = '<div class="dash-empty">' + t('dashboard.loadFailed') + '</div>';
@@ -3776,9 +3806,13 @@
   var pfIconUploadedImg = null;
 
   function pfIconOpenModal() {
+    // 以前はここでcloseSidebar()だけを個別に呼ぶ場当たり対応だったため、サイドバー以外の
+    // 兄弟オーバーレイ(ダッシュボード・目標・プロフィール等)が開いたまま設定→アイコン
+    // カスタマイズへ遷移すると、それらが閉じられずに重なって表示されていた。
+    // mfCloseOtherTopLevelOverlays()に一本化し、どの兄弟が開いていても確実に閉じる。
+    mfCloseOtherTopLevelOverlays('iconCustomModal');
     document.getElementById('iconCustomModal').classList.add('is-visible');
     mfOnModalOpen('iconCustomModal');
-    closeSidebar();
   }
   function pfIconCloseModal() {
     document.getElementById('iconCustomModal').classList.remove('is-visible');
