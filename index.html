@@ -2434,6 +2434,18 @@
     });
   }
   var mfTriggerEls = {}; // overlayId -> モーダルを開く直前にフォーカスがあった要素
+  // 🩹 連鎖オーバーレイのフォーカス誤復元バグ対策: mfCloseOtherTopLevelOverlays()が
+  // 「開こうとしているBのために他のAを閉じる」際、mfOnModalClose(A)が即座にA自身の
+  // トリガーへフォーカスを戻してしまうと、その直後に呼ばれるmfOnModalOpen(B)が
+  // document.activeElementを読み取った時点で既にA側のトリガーに上書きされてしまって
+  // おり、Bの本当のトリガー（実際にクリックされた要素や「?」ショートカット押下時に
+  // フォーカスされていた要素）を正しく記憶できなくなる。この「他を閉じるための連鎖的な
+  // close」である間だけ、mfOnModalClose()自身のフォーカス復元を止めておく（Escape・
+  // オーバーレイ外クリック等ユーザーが直接1つだけ閉じる通常のcloseでは、このフラグは
+  // 立たないので今までどおり即座に復元される）。settingsGoToIconCustomize()のように
+  // mfCloseOtherTopLevelOverlays()を経由せず直接「閉じてから開く」遷移も同じ穴を持つため
+  // 同じフラグで包む。
+  var mfSuppressFocusRestore = 0;
   function mfOnModalOpen(overlayId) {
     var overlay = document.getElementById(overlayId);
     if (!overlay) return;
@@ -2449,10 +2461,22 @@
       }
     }
   }
+  // トリガーへフォーカスを戻す前に、document.contains()だけでなくoffsetParentも
+  // チェックする。トリガーがDOM上には残っているものの（例：別のオーバーレイの中の
+  // 要素、settingsGoToIconCustomize()の「カスタマイズ」ボタンのように閉じた設定
+  // モーダルの中にあった等）、そのオーバーレイ自体が閉じてdisplay:noneになり
+  // フォーカス不可能になっているケースに備えたもの——この場合は無言で失敗させず、
+  // 常に見えている下部ドックへ安全に逃がす。
   function mfOnModalClose(overlayId) {
     var trigger = mfTriggerEls[overlayId];
     delete mfTriggerEls[overlayId];
-    if (trigger && typeof trigger.focus === 'function' && document.contains(trigger)) trigger.focus();
+    if (mfSuppressFocusRestore) return;
+    if (trigger && typeof trigger.focus === 'function' && document.contains(trigger) && trigger.offsetParent !== null) {
+      trigger.focus();
+    } else {
+      var fallback = document.querySelector('.site-dock button, .site-dock a');
+      if (fallback) fallback.focus();
+    }
   }
   // 🔀 オーバーレイの相互排他: 表示設定／ダッシュボード／目標／プロフィール／
   // サイドバー（「ツール」ドロワー）の5つは下部ドックやページ内バー・「?」
@@ -2466,6 +2490,8 @@
   // 設定とdm/iconCustomModalが同時に表示されたままになる相互排他漏れが起きる
   // (実際にライブ確認で再現した)ため、この2つも必ずここに含める。
   function mfCloseOtherTopLevelOverlays(exceptId) {
+    mfSuppressFocusRestore++;
+    try {
     if (exceptId !== 'settingsModalOverlay' && mfIsOverlayVisible('settingsModalOverlay')) settingsCloseModal();
     if (exceptId !== 'dashModalOverlay' && mfIsOverlayVisible('dashModalOverlay')) pfDashClose();
     if (exceptId !== 'goalModalOverlay' && mfIsOverlayVisible('goalModalOverlay')) goalCloseModal();
@@ -2473,6 +2499,9 @@
     if (exceptId !== 'sidebar' && mfIsOverlayVisible('sidebar')) closeSidebar();
     if (exceptId !== 'iconCustomModal' && mfIsOverlayVisible('iconCustomModal')) pfIconCloseModal();
     if (exceptId !== 'dmModalOverlay' && mfIsOverlayVisible('dmModalOverlay')) dmCloseModal();
+    } finally {
+      mfSuppressFocusRestore--;
+    }
   }
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Tab') return;
@@ -4074,7 +4103,19 @@
     mfOnModalClose('settingsModalOverlay');
   }
   function settingsGoToIconCustomize() {
-    settingsCloseModal();
+    // 🩹 「カスタマイズ」ボタンは設定モーダルの中にある(=そのトリガー自身が、これから
+    // 閉じる設定モーダルの子孫)。ここでmfCloseOtherTopLevelOverlays()を経由せず
+    // settingsCloseModal()を直接呼ぶと、mfOnModalClose()が即座に設定モーダル自身の
+    // トリガーへフォーカスを戻してしまい、続くpfIconOpenModal()がdocument.activeElement
+    // を読み取る時点で既に上書きされている。suppressフラグで包み、実際にクリックされた
+    // 「カスタマイズ」ボタン(まだ閉じておらずフォーカスされたまま)をpfIconOpenModal()の
+    // mfOnModalOpen()が正しく捕捉できるようにする。
+    mfSuppressFocusRestore++;
+    try {
+      settingsCloseModal();
+    } finally {
+      mfSuppressFocusRestore--;
+    }
     pfIconOpenModal();
   }
 
