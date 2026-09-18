@@ -42,6 +42,10 @@
     --cream: #FFF8EE;
     --cream-deep: #FCEEDA;
     --card-bg: #FFFFFF;
+    /* 🩹 画面上部の固定ヘッダー(.page-head-top)専用。背景色をそのまま不透明で
+       敷くと本文のクリーム系グラデーションと衝突して白い帯のように浮いて見える
+       ため、半透明+ぼかし(backdrop-filter)で下地を透かして馴染ませる。 */
+    --card-bg-glass: rgba(255,255,255,0.88);
     --amber: #E8850A;
     --amber-light: #FFC168;
     /* ⚙️ 表示設定: ダッシュボードカレンダーの「今日」バッジ(丸塗り+白文字)専用の
@@ -90,6 +94,7 @@
     --cream: #1B140D;
     --cream-deep: #241B10;
     --card-bg: #2A2015;
+    --card-bg-glass: rgba(42,32,21,0.88);
     --amber-deep: #FFA733;
     --amber-deep-bg: rgba(255,167,51,0.12);
     --text: #F5ECE0;
@@ -161,9 +166,13 @@
   .page-head-top {
     display: flex; justify-content: space-between; align-items: center; gap: 8px;
     position: sticky; top: 0; z-index: 20;
-    margin: 0 0 12px;
-    padding: 12px 0;
-    background: var(--card-bg);
+    /* 🩹 .wrap(max-width:720/960pxで中央寄せ)の内側に置いたままだと、PC幅では
+       周囲のクリーム背景から浮いた白い帯（中央に浮く白い箱）に見えてしまう。
+       他サイト(wings/item等)のnavと同じく画面幅いっぱいに広げ、ネイティブアプリの
+       ツールバーのように地続きで見えるようにする。 */
+    margin: 0 calc(50% - 50vw) 12px;
+    padding: 12px 20px;
+    background: var(--card-bg-glass);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     border-bottom: 0.5px solid var(--border);
   }
