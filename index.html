@@ -1399,7 +1399,7 @@
         <span class="unit" data-i18n="goal.unit">本</span>
       </div>
       <div class="quick-actions-row">
-        <button type="button" class="fill-current-btn" id="fillCurrentBtn" data-i18n="goal.fillCurrentBtn">所持通貨から反映</button>
+        <button type="button" class="fill-current-btn" id="fillCurrentBtn">所持通貨から反映(+15本)</button>
         <button type="button" class="survey-btn" id="surveyBtn" data-i18n="goal.surveyBtn">アンケートに回答した(+3本)</button>
         <button type="button" class="heart-sent-btn" id="heartSentBtn" data-i18n="goal.heartSentBtn">ハートを送った(-3本)</button>
       </div>
@@ -1813,7 +1813,8 @@
       plannedUsageLabel: { ja: '使用予定本数(任意)', en: 'Planned Usage (optional)' },
       plannedUsageHint: { ja: '目標本数とは別に、近々何かに使う予定がある分があれば入力してください。必要本数の計算に加算されます。', en: 'If you have candles you plan to spend on something soon, separate from your goal, enter that amount here. It will be added to your required total.' },
       currentLabel: { ja: '所持本数', en: 'Current Amount' },
-      fillCurrentBtn: { ja: '所持通貨から反映', en: 'Fill from Owned Currency' },
+      fillCurrentBtnPace: { ja: '所持通貨から反映(+{n}本)', en: 'Fill from Owned Currency (+{n} candles)' },
+      fillCurrentBtnPaceOne: { ja: '所持通貨から反映(+{n}本)', en: 'Fill from Owned Currency (+{n} candle)' },
       surveyBtn: { ja: 'アンケートに回答した(+3本)', en: 'Answered the Survey (+3 candles)' },
       heartSentBtn: { ja: 'ハートを送った(-3本)', en: 'Sent a Heart (-3 candles)' },
       subtractAmountPlaceholder: { ja: '例: 10', en: 'e.g. 10' },
@@ -5667,6 +5668,10 @@
     els.dailyRateReadout.textContent = t(globalDailyRate === 1 ? 'pace.dailyRateReadoutOne' : 'pace.dailyRateReadout', { n: globalDailyRate }) + (globalDailyRate === 20 ? t('pace.ashRouteNote') : '');
     els.finishTodayBtn.innerHTML = t(dailyRate === 1 ? 'pace.finishTodayBtnOne' : 'pace.finishTodayBtn', { n: dailyRate });
     els.finishTodayBtn.disabled = dailyRate <= 0;
+    // 「所持通貨から反映」ボタンのラベルにも、実際に加算される1日の集めペース分を
+    // 表示しておく(押す前にどれだけ増えるか分かるように。0本の時も含め、finishTodayBtnと
+    // 同じ表記にする。こちらは所持通貨側の反映自体は0本でも意味があるため無効化はしない)。
+    els.fillCurrentBtn.innerHTML = t(dailyRate === 1 ? 'goal.fillCurrentBtnPaceOne' : 'goal.fillCurrentBtnPace', { n: dailyRate });
     updateGoalPaceOverrideVisibility();
 
     // 使用予定本数は目標本数に上乗せして必要本数を計算する(目標として貯めておきたい分＋別途使う予定の分)
@@ -5835,15 +5840,20 @@
   });
 
   // 「所持通貨から反映」ボタン: プロフィール共通の所持キャンドル数(wishOwnCurrency.candle)を
-  // そのまま所持本数欄に反映する。アイテム所持管理などで既に入力済みの値を使い回せる。
+  // ベースに、「1日の集めペース」で設定した本数を上乗せして所持本数欄に反映する。
+  // アイテム所持管理などで直近に入力済みの値をベースにしつつ、そこからまだ反映されて
+  // いないだろう「今日の集め分」も一緒に見込んでおける(今日の分を集め終わったボタンと
+  // 同じcurrentEffectiveDailyRate()を使い、目標ごとのペース個別設定があればそちらを使う)。
   els.fillCurrentBtn.addEventListener('click', function () {
     clearCurrentCommitTimer();
     var before = Math.max(0, parseFloat(els.current.value) || 0);
     var c = pfLoadCurrency();
+    var globalDailyRate = Math.max(0, Math.min(25, parseInt(els.dailyRate.value, 10) || 0));
+    var dailyRate = currentEffectiveDailyRate(globalDailyRate);
     // バグ修正: pfLoadCurrency()側で既に非負へクランプ済みだが、直接入力欄への
     // 反映(フィールドの値)と履歴への差分記録の両方で、他の箇所と同じ
     // Math.max(0, ...)ガードをここでも明示的にかけておく(二重の安全策)。
-    var newVal = Math.max(0, c.candle);
+    var newVal = Math.max(0, c.candle) + dailyRate;
     els.current.value = newVal;
     update();
     saveState();
