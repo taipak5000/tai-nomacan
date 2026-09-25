@@ -1399,7 +1399,7 @@
         <span class="unit" data-i18n="goal.unit">本</span>
       </div>
       <div class="quick-actions-row">
-        <button type="button" class="fill-current-btn" id="fillCurrentBtn">所持通貨から反映(+15本)</button>
+        <button type="button" class="fill-current-btn" id="fillCurrentBtn">一日のペースから反映(+15本)</button>
         <button type="button" class="survey-btn" id="surveyBtn" data-i18n="goal.surveyBtn">アンケートに回答した(+3本)</button>
         <button type="button" class="heart-sent-btn" id="heartSentBtn" data-i18n="goal.heartSentBtn">ハートを送った(-3本)</button>
       </div>
@@ -1813,8 +1813,8 @@
       plannedUsageLabel: { ja: '使用予定本数(任意)', en: 'Planned Usage (optional)' },
       plannedUsageHint: { ja: '目標本数とは別に、近々何かに使う予定がある分があれば入力してください。必要本数の計算に加算されます。', en: 'If you have candles you plan to spend on something soon, separate from your goal, enter that amount here. It will be added to your required total.' },
       currentLabel: { ja: '所持本数', en: 'Current Amount' },
-      fillCurrentBtnPace: { ja: '所持通貨から反映(+{n}本)', en: 'Fill from Owned Currency (+{n} candles)' },
-      fillCurrentBtnPaceOne: { ja: '所持通貨から反映(+{n}本)', en: 'Fill from Owned Currency (+{n} candle)' },
+      fillCurrentBtnPace: { ja: '一日のペースから反映(+{n}本)', en: 'Fill from Daily Pace (+{n} candles)' },
+      fillCurrentBtnPaceOne: { ja: '一日のペースから反映(+{n}本)', en: 'Fill from Daily Pace (+{n} candle)' },
       surveyBtn: { ja: 'アンケートに回答した(+3本)', en: 'Answered the Survey (+3 candles)' },
       heartSentBtn: { ja: 'ハートを送った(-3本)', en: 'Sent a Heart (-3 candles)' },
       subtractAmountPlaceholder: { ja: '例: 10', en: 'e.g. 10' },
@@ -1929,7 +1929,7 @@
       undoBtn: { ja: '取り消す', en: 'Undo' },
       amountTemplate: { ja: '{sign}{n}本', en: '{sign}{n} candles' },
       amountTemplateOne: { ja: '{sign}{n}本', en: '{sign}{n} candle' },
-      entryFillCurrent: { ja: '所持通貨から反映', en: 'Filled from owned currency' },
+      entryFillCurrent: { ja: '一日のペースから反映', en: 'Filled from daily pace' },
       entrySurvey: { ja: 'アンケート回答', en: 'Survey answered' },
       entryHeartSent: { ja: 'ハートを送った', en: 'Sent a heart' },
       entryManualSubtract: { ja: '手動で減らした', en: 'Manually subtracted' },
@@ -3692,8 +3692,8 @@
       localStorage.setItem(nsKey('wishOwnCurrency'), JSON.stringify(wish));
     }
     return {
-      // バグ修正: 「所持通貨から反映」ボタン(els.fillCurrentBtn)がこの値をそのまま
-      // 所持本数欄に入れるため、他ツール側の不具合などでwishOwnCurrency.candleに
+      // バグ修正: 「一日のペースから反映」ボタン(els.fillCurrentBtn)がこの値を
+      // 所持本数欄に反映するため、他ツール側の不具合などでwishOwnCurrency.candleに
       // 負の値が保存されてしまっていた場合に備え、他の読み取り・書き込み箇所と同じく
       // ここでも非負にクランプしておく(直接入力の値は既にMath.max(0, ...)でクランプ済み)。
       candle: Math.max(0, wish.candle || 0),
@@ -4832,12 +4832,12 @@
     renderHistory();
     renderPaceSuggestion();
     // バグ修正: このaddHistoryEntry()自体がrenderTrendChart()を呼んでいなかったため、
-    // 各クイックアクションボタン(所持通貨から反映・アンケート回答・今日の分・手動確定)は
+    // 各クイックアクションボタン(一日のペースから反映・アンケート回答・今日の分・手動確定)は
     // 直前に呼んでいるupdate()内のrenderTrendChart()が「まだこの履歴が追加される前」の
     // 状態を描画してしまい、グラフだけ古い/矛盾した形のまま残っていた。ここで確実に
     // 最新の履歴を反映して再描画する。
     renderTrendChart();
-    // 🔥 「記録」に相当する操作(所持通貨から反映・アンケート回答・今日の分・手動確定/取消操作は
+    // 🔥 「記録」に相当する操作(一日のペースから反映・アンケート回答・今日の分・手動確定/取消操作は
     // 別経路なのでここには来ない)のたびに、今日をストリークとして記録し称号判定も行う。
     streakRecordToday();
     renderStreak();
@@ -5673,7 +5673,7 @@
     els.dailyRateReadout.textContent = t(globalDailyRate === 1 ? 'pace.dailyRateReadoutOne' : 'pace.dailyRateReadout', { n: globalDailyRate }) + (globalDailyRate === 20 ? t('pace.ashRouteNote') : '');
     els.finishTodayBtn.innerHTML = t(dailyRate === 1 ? 'pace.finishTodayBtnOne' : 'pace.finishTodayBtn', { n: dailyRate });
     els.finishTodayBtn.disabled = dailyRate <= 0;
-    // 「所持通貨から反映」ボタンのラベルにも、実際に加算される1日の集めペース分を
+    // 「一日のペースから反映」ボタンのラベルにも、実際に加算される1日の集めペース分を
     // 表示しておく(押す前にどれだけ増えるか分かるように。0本の時も含め、finishTodayBtnと
     // 同じ表記にする。こちらは所持通貨側の反映自体は0本でも意味があるため無効化はしない)。
     els.fillCurrentBtn.innerHTML = t(dailyRate === 1 ? 'goal.fillCurrentBtnPaceOne' : 'goal.fillCurrentBtnPace', { n: dailyRate });
@@ -5809,7 +5809,7 @@
 
   // ═══ 所持本数欄への直接入力: 確定(blur/Enter/入力停止から一定時間後)時にのみ
   // 共有ストレージ(wishOwnCurrency)へ反映し、獲得履歴にも記録する ═══
-  // 3つの操作ボタン(所持通貨から反映・アンケート回答・今日の分)は押した瞬間が
+  // 3つの操作ボタン(一日のペースから反映・アンケート回答・今日の分)は押した瞬間が
   // そのまま「確定」なのでこれまで通り即座に反映・記録するが、直接入力は
   // キー入力のたびに確定してしまうと、試しに打っただけの数値でも他ツールの
   // 所持通貨を即座に上書きしてしまい、かつ履歴にも残らず取り消せない問題があった。
@@ -5859,7 +5859,7 @@
     commitCurrentValue();
   });
 
-  // 「所持通貨から反映」ボタン: プロフィール共通の所持キャンドル数(wishOwnCurrency.candle)を
+  // 「一日のペースから反映」ボタン: プロフィール共通の所持キャンドル数(wishOwnCurrency.candle)を
   // ベースに、「1日の集めペース」で設定した本数を上乗せして所持本数欄に反映する。
   // アイテム所持管理などで直近に入力済みの値をベースにしつつ、そこからまだ反映されて
   // いないだろう「今日の集め分」も一緒に見込んでおける(今日の分を集め終わったボタンと
