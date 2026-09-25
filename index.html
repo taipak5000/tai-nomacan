@@ -883,7 +883,9 @@
     display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
   .pf-currency-toggle-label { font-size: 11px; font-weight: 700; text-transform: none; letter-spacing: 0; }
   .pf-currency-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 2px; }
-  .pf-currency-label { font-size: 13px; color: var(--text); }
+  /* 🩹 使いやすさ改善: 従来は<span>だったが<label for>にしたことでクリック/タップ可能に
+     なったため、それが分かるようcursor:pointerを明示する(入力欄自体のcursor:textとは別)。 */
+  .pf-currency-label { font-size: 13px; color: var(--text); cursor: pointer; }
   .pf-currency-row .pf-currency-input {
     width: 90px; background: var(--cream); border: 1px solid var(--border); border-radius: 8px;
     padding: 6px 8px; font-size: 14px; color: var(--text); font-family: inherit; outline: none; box-sizing: border-box; text-align: right;
@@ -1300,6 +1302,13 @@
       </div>
 
       <div class="sidebar-section-label" style="margin:18px 0 8px;"><svg class="inline-icon" width="15" height="15"><use href="#i-palette"/></svg> <span data-i18n="settings.customizeSectionLabel">表示のカスタマイズ</span></div>
+      <div class="toggle-field" style="margin-bottom:10px;">
+        <div class="toggle-text">
+          <span class="toggle-title" data-i18n="settings.titlesVisibleLabel">称号を表示する</span>
+          <span class="toggle-sub" data-i18n="settings.titlesVisibleSub">専用カード・プロフィール一覧内の獲得称号を表示します</span>
+        </div>
+        <input type="checkbox" id="settingsTitlesVisibleCheckbox" onchange="settingsToggleTitlesVisible(this.checked)" style="width:20px; height:20px; accent-color: var(--amber); cursor:pointer; flex-shrink:0;">
+      </div>
       <div class="toggle-field" style="margin-bottom:18px;">
         <div class="toggle-text">
           <span class="toggle-title" data-i18n="settings.customizeIconLabel">ホーム画面アイコン</span>
@@ -1673,7 +1682,8 @@
       heart: { ja: 'ハート', en: 'Hearts' },
       ascendedCandle: { ja: '星のキャンドル', en: 'Star Candles' },
       seasonCandle: { ja: 'シーズンキャンドル', en: 'Season Candles' },
-      giftPass: { ja: 'ギフトパス', en: 'Gift Pass' }
+      giftPass: { ja: 'ギフトパス', en: 'Gift Pass' },
+      syncHint: { ja: 'キャンドル・ハート・星のキャンドルはアイテム所持管理・星のキャンドル計算機と、シーズンキャンドルは精霊同行ツールと値を共有します（プロフィールごとに独立した値です）。', en: 'Candles, Hearts, and Star Candles are shared with Item Collection and the Star Candle Calculator; Season Candles are shared with the Spirit Companion tool (each profile keeps its own separate values).' }
     },
     dashboard: {
       modalTitle: { ja: '今日・今週・今月', en: 'Today / This Week / This Month' },
@@ -1797,6 +1807,8 @@
       shortcutToggleDark: { ja: '外観モード切替（ライト/ダーク/システム）', en: 'Cycle appearance (Light/Dark/System)' },
       shortcutCloseModal: { ja: '開いているウィンドウを閉じる', en: 'Close the open window' },
       customizeSectionLabel: { ja: '表示のカスタマイズ', en: 'Customization' },
+      titlesVisibleLabel: { ja: '称号を表示する', en: 'Show titles' },
+      titlesVisibleSub: { ja: '専用カード・プロフィール一覧内の獲得称号を表示します', en: 'Show earned titles in the Titles card and the profile list' },
       customizeIconLabel: { ja: 'ホーム画面アイコン', en: 'Home screen icon' },
       customizeBtn: { ja: 'カスタマイズ', en: 'Customize' },
       langSectionLabel: { ja: '言語', en: 'Language' }
@@ -1920,9 +1932,9 @@
     },
     history: {
       heading: { ja: '獲得履歴', en: 'History' },
-      note: { ja: '所持通貨からの反映・アンケート回答による増減を記録します(最大50件)。「取り消す」でその操作だけを元に戻せます。', en: 'Records increases and decreases from filling in from owned currency and survey answers (up to 50 entries). Use "Undo" to revert just that one action.' },
+      note: { ja: '一日のペースからの反映・アンケート回答による増減を記録します(最大50件)。「取り消す」でその操作だけを元に戻せます。', en: 'Records increases and decreases from filling in from daily pace and survey answers (up to 50 entries). Use "Undo" to revert just that one action.' },
       clearBtn: { ja: '履歴を全て消去', en: 'Clear all history' },
-      empty: { ja: 'まだ履歴はありません。所持通貨からの反映やアンケート回答ボタンで記録されます。', en: 'No history yet. It will be recorded when you use the Fill from Owned Currency or Survey Answered buttons.' },
+      empty: { ja: 'まだ履歴はありません。一日のペースからの反映やアンケート回答ボタンで記録されます。', en: 'No history yet. It will be recorded when you use the Fill from Daily Pace or Survey Answered buttons.' },
       emptyFiltered: { ja: 'この目標での履歴はまだありません。', en: 'No history yet for this goal.' },
       filterLabel: { ja: '表示する目標', en: 'Filter by goal' },
       filterAllOption: { ja: 'すべての目標', en: 'All goals' },
@@ -3561,6 +3573,9 @@
   // プロフィール切替モーダルの1行分に添える「🏆 N個の称号 ▾」開閉セクションのHTML。
   // pfRenderModal()から、プロフィールを切り替えずに(=アクティブプロフィールを問わず)呼ばれる。
   function pfBuildTitlesSectionHtml(p) {
+    // ⚙️ 表示設定「称号を表示する」がオフの場合は、この行自体を出さない
+    // (称号データの読み取り・保存には影響しない。見た目だけを消す)。
+    if (typeof skyTitlesVisible === 'function' && !skyTitlesVisible()) return '';
     var groups = pfCollectEarnedTitles(p.id);
     var total = groups.reduce(function (sum, g) { return sum + g.titles.length; }, 0);
     var expanded = !!pfTitlesExpandedIds[p.id];
@@ -3730,12 +3745,22 @@
     if (!body) return;
     var c = pfLoadCurrency();
     body.innerHTML = PF_CURRENCY_FIELDS.map(function (f) {
+      // 🩹 使いやすさ改善: ラベルをクリック/タップ可能な<label for>にし、入力欄との
+      // 紐付けをid経由の正式な関連付けにする(従来はただの<span>で、アイコン・文言部分を
+      // 押しても何も起きなかった。行の左側全体がタップ領域として使えるようになり、
+      // スクリーンリーダーでも「フィールド名, 数値入力」のように正しく読み上げられる)。
+      var inputId = 'pfCurrencyInput_' + f.key;
       return '<div class="pf-currency-row">' +
-        '<span class="pf-currency-label">' + f.icon + ' ' + t(f.i18nKey) + '</span>' +
-        '<input type="number" min="0" class="pf-currency-input" value="' + c[f.key] + '" ' +
+        '<label class="pf-currency-label" for="' + inputId + '">' + f.icon + ' ' + t(f.i18nKey) + '</label>' +
+        '<input type="number" min="0" inputmode="numeric" id="' + inputId + '" class="pf-currency-input" value="' + c[f.key] + '" ' +
         'onchange="pfSaveCurrencyField(\'' + f.key + '\', this.value)">' +
         '</div>';
-    }).join('');
+    }).join('') +
+      // 🩹 使いやすさ改善: どの値がどのツールと連動しているかが分からないと、「アイテム
+      // 所持管理で入力した値がなぜここにも出ているのか」「ここで書き換えたら向こうは
+      // どうなるのか」が伝わりにくい。実際の同期先(pfLoadCurrency/pfSaveCurrencyField
+      // 参照)をそのまま短く説明しておく。
+      '<p class="pf-hint">' + t('currency.syncHint') + '</p>';
     pfSyncCurrencyToggleUI();
   }
 
@@ -4112,6 +4137,32 @@
   function settingsToggleShortcuts(checked) {
     try { localStorage.setItem(SHORTCUTS_STORAGE_KEY, checked ? '1' : '0'); } catch (e) { /* noop */ }
   }
+
+  // 🏆 称号(実績)の表示/非表示設定。sky_shortcuts_enabledと同じく、プロフィール単位
+  // ではなく端末(ブラウザ)ごとの表示設定のためnsKey()は使わない。デフォルトはON
+  // (既存ユーザーは何もしなければ今まで通り見える)。称号の判定・解禁・保存自体は
+  // この設定に関わらず常に継続し(loadTitleStore/checkAndUnlockTitles参照)、この設定は
+  // あくまで見た目(専用カード・プロフィール切替モーダル内の一覧・解禁トースト)だけを
+  // 切り替える。オフにした後で再度オンにしても、それまでの解禁済み称号はそのまま見える。
+  var TITLES_VISIBLE_STORAGE_KEY = 'sky_titles_visible';
+  function skyTitlesVisible() {
+    try {
+      var v = localStorage.getItem(TITLES_VISIBLE_STORAGE_KEY);
+      return v === null ? true : v === '1'; // 未設定時はデフォルトで表示
+    } catch (e) { return true; }
+  }
+  function updateTitlesVisibleCheckboxUI() {
+    var cb = document.getElementById('settingsTitlesVisibleCheckbox');
+    if (cb) cb.checked = skyTitlesVisible();
+  }
+  function settingsToggleTitlesVisible(checked) {
+    try { localStorage.setItem(TITLES_VISIBLE_STORAGE_KEY, checked ? '1' : '0'); } catch (e) { /* noop */ }
+    if (typeof renderTitles === 'function') renderTitles();
+    if (typeof pfRenderModal === 'function') {
+      var pfOverlay = document.getElementById('pfModalOverlay');
+      if (pfOverlay && pfOverlay.classList.contains('is-visible')) pfRenderModal();
+    }
+  }
   function settingsOpenModal() {
     // 既に開いている場合は何もしない（「?」ショートカットは他のモーダルが開いているか
     // 確認せず呼ばれるため、ここでガードしないとmfOnModalOpen側のトリガー参照が
@@ -4120,6 +4171,7 @@
     mfCloseOtherTopLevelOverlays('settingsModalOverlay'); // サイドバーが開いていた場合もこれで閉じられる
     updateThemeToggleUI();
     updateShortcutsCheckboxUI();
+    updateTitlesVisibleCheckboxUI();
     updateLangButtonsUI();
     var overlay = document.getElementById('settingsModalOverlay');
     if (overlay) overlay.classList.add('is-visible');
@@ -4160,6 +4212,7 @@
   window.settingsCloseModal = settingsCloseModal;
   window.settingsGoToIconCustomize = settingsGoToIconCustomize;
   window.settingsToggleShortcuts = settingsToggleShortcuts;
+  window.settingsToggleTitlesVisible = settingsToggleTitlesVisible;
 
   window.dmOpenModal = dmOpenModal;
   window.dmCloseModal = dmCloseModal;
@@ -5468,6 +5521,11 @@
     var chips = document.getElementById('titlesChips');
     var countEl = document.getElementById('titlesCount');
     if (!panel || !chips) return;
+    // ⚙️ 表示設定「称号を表示する」がオフの場合は専用カード自体を隠す。判定・保存
+    // (checkAndUnlockTitles/saveTitleStore)は呼び出し元で引き続き行われるため、称号の
+    // 解禁進捗自体は表示設定に関わらず失われない(再度ONにすれば続きがそのまま見える)。
+    if (!skyTitlesVisible()) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
     var earnedCount = TITLES.filter(function (ti) { return store.earned[ti.id]; }).length;
     if (countEl) countEl.textContent = t('titles.countTemplate', { earned: earnedCount, total: TITLES.length });
     // 未獲得も含め全件を常に描画する。未獲得は名前・条件文を伏せ、汎用の🔒表示＋汎用ツールチップ
@@ -5486,6 +5544,10 @@
   // (即座に全件呼ぶと後の呼び出しが前の表示を上書きしてしまい、最後の1件しか見えない)。
   function refreshTitlesUI() {
     var newlyEarned = checkAndUnlockTitles();
+    // ⚙️ 判定・解禁・保存(checkAndUnlockTitles内)は表示設定に関わらず常に行うが、
+    // 「称号を表示する」がオフの間は解禁トースト(称号名・アイコンが見えてしまう)も
+    // 表示設定に合わせて出さない。
+    if (!skyTitlesVisible()) return;
     newlyEarned.forEach(function (ti) {
       queueNomaToast(t('titles.unlockedToastTemplate', { icon: ti.icon, name: L(ti.name) }));
     });
@@ -5877,6 +5939,12 @@
     els.current.value = newVal;
     update();
     saveState();
+    // バグ修正: 他の3つの確定操作ボタン(アンケート回答・ハートを送った・今日の分)は
+    // いずれも値の変更直後にsyncCurrentToSharedCurrency()を呼び、共有ストレージ
+    // (wishOwnCurrency.candle)へ即座に反映しているが、このボタンだけ呼び忘れていた。
+    // そのため「一日のペースから反映」を押しても上乗せ後の値がitem等の他ツールに
+    // 伝わらず、プロフィールモーダルの「所持通貨」欄も古い値のまま食い違っていた。
+    syncCurrentToSharedCurrency();
     addHistoryEntry('history.entryFillCurrent', Math.round((newVal - before) * 100) / 100);
     syncCommittedCurrent();
   });
