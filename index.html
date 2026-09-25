@@ -1881,6 +1881,11 @@
     result: {
       heading: { ja: '結果', en: 'Result' },
       enterTarget: { ja: '目標本数を入力すると、達成までの日数が表示されます。', en: 'Enter a target amount to see how many days until you reach your goal.' },
+      paceOnlyHeroTemplate: { ja: '1日 {n}<span class="unit-small">本</span>のペース', en: '{n}<span class="unit-small"> candles/day</span>' },
+      paceOnlyHeroTemplateOne: { ja: '1日 {n}<span class="unit-small">本</span>のペース', en: '{n}<span class="unit-small"> candle/day</span>' },
+      paceOnlyWeekTemplate: { ja: '1週間後: 約{n}本', en: 'In 1 week: ~{n} candles' },
+      paceOnlyMonthTemplate: { ja: '1ヶ月後: 約{n}本', en: 'In 1 month: ~{n} candles' },
+      paceOnlyNote: { ja: '※目標本数を入力すると、達成までの日数も表示されます', en: '*Enter a target amount to also see the days until you reach it' },
       achieved: { ja: '<svg class="inline-icon" width="15" height="15"><use href="#i-sparkle"/></svg> 目標本数を達成しています！', en: '<svg class="inline-icon" width="15" height="15"><use href="#i-sparkle"/></svg> You\'ve reached your target!' },
       achievedBreakdown: { ja: '所持 {current}本 ／ 必要 {target}本{usageNote}', en: 'Current {current} {currentUnit} / Needed {target} {targetUnit}{usageNote}' },
       usageNote: { ja: '（使用予定{amount}本を含む）', en: ' (includes {amount} candles planned for use)' },
@@ -5702,7 +5707,22 @@
     }
 
     if (target <= 0) {
-      html = '<p class="state-message">' + t('result.enterTarget') + '</p>';
+      // 目標本数が未入力でも、1日の集めペースさえ設定されていれば「このペースなら
+      // 何日後にどれくらい貯まるか」の見込みだけは示す(目標を入れて初めてペースが
+      // 意味を持つ、という誤解を生まないため)。ペース自体が0(ハート消費で相殺され
+      // ている場合を含む)の時だけ、これまで通りの「目標本数を入力してください」に留める。
+      if (totalDaily > 0) {
+        var weekTotal = current + totalDaily * 7;
+        var monthTotal = current + totalDaily * 30;
+        html =
+          '<div class="hero-stat">' + t(isOnePlural(totalDaily) ? 'result.paceOnlyHeroTemplateOne' : 'result.paceOnlyHeroTemplate', { n: fmt(totalDaily) }) + '</div>' +
+          '<p class="stat-line">' + t('result.paceOnlyWeekTemplate', { n: fmt(weekTotal) }) + '</p>' +
+          '<p class="stat-line">' + t('result.paceOnlyMonthTemplate', { n: fmt(monthTotal) }) + '</p>' +
+          '<p class="breakdown">' + dailyLine + '</p>' +
+          '<p class="note">' + t('result.paceOnlyNote') + '</p>';
+      } else {
+        html = '<p class="state-message">' + t('result.enterTarget') + '</p>';
+      }
     } else if (remaining <= 0) {
       html =
         '<p class="state-message achieved">' + t('result.achieved') + '</p>' +
