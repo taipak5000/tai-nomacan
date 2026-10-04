@@ -1410,7 +1410,7 @@
       <div class="quick-actions-row">
         <button type="button" class="fill-current-btn" id="fillCurrentBtn">一日のペースから反映(+15本)</button>
         <button type="button" class="survey-btn" id="surveyBtn" data-i18n="goal.surveyBtn">アンケートに回答した(+3本)</button>
-        <button type="button" class="quest-btn" id="questBtn" data-i18n="goal.questBtn">クエスト分＋4</button>
+        <button type="button" class="quest-btn" id="questBtn" data-i18n="goal.questBtn">クエスト分(+4本)</button>
         <button type="button" class="heart-sent-btn" id="heartSentBtn" data-i18n="goal.heartSentBtn">ハートを送った(-3本)</button>
       </div>
       <div class="adjust-amount-row">
@@ -1829,7 +1829,7 @@
       fillCurrentBtnPace: { ja: '一日のペースから反映(+{n}本)', en: 'Fill from Daily Pace (+{n} candles)' },
       fillCurrentBtnPaceOne: { ja: '一日のペースから反映(+{n}本)', en: 'Fill from Daily Pace (+{n} candle)' },
       surveyBtn: { ja: 'アンケートに回答した(+3本)', en: 'Answered the Survey (+3 candles)' },
-      questBtn: { ja: 'クエスト分＋4', en: 'Quest Reward (+4)' },
+      questBtn: { ja: 'クエスト分(+4本)', en: 'Quest Reward (+4 candles)' },
       heartSentBtn: { ja: 'ハートを送った(-3本)', en: 'Sent a Heart (-3 candles)' },
       subtractAmountPlaceholder: { ja: '例: 10', en: 'e.g. 10' },
       subtractAmountBtn: { ja: 'その分を減らす', en: 'Subtract' },
@@ -5966,7 +5966,7 @@
     syncCommittedCurrent();
   });
 
-  // 「クエスト分＋4」ボタン: クエストの報酬(4本)をそのまま加算する(アンケート回答ボタンと同じ流れ)。
+  // 「クエスト分(+4本)」ボタン: クエストの報酬(4本)をそのまま加算する(アンケート回答ボタンと同じ流れ)。
   els.questBtn.addEventListener('click', function () {
     clearCurrentCommitTimer();
     var current = Math.max(0, parseFloat(els.current.value) || 0);
