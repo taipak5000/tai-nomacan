@@ -5063,11 +5063,14 @@
      ================================================================ */
   function streakKey() { return nsKey('skyNomacanStreak_v1'); } // { days:{'YYYY-MM-DD':1,...}, longest:number }
   function loadStreak() {
+    var s = { days: {}, longest: 0 };
     try {
       var d = JSON.parse(localStorage.getItem(streakKey()));
-      if (d && typeof d === 'object') return { days: d.days || {}, longest: d.longest || 0 };
+      if (d && typeof d === 'object') s = { days: d.days || {}, longest: d.longest || 0 };
     } catch (e) { /* 破損データは初期状態として扱う */ }
-    return { days: {}, longest: 0 };
+    return streakMigrateGameDay(s, nsKey('skyNomacanStreakGameDay_v1'), function () {
+      return loadHistory().map(function (e) { return e && e.time; });
+    }, saveStreak);
   }
   function saveStreak(s) {
     try { localStorage.setItem(streakKey(), JSON.stringify(s)); } catch (e) { /* noop */ }
@@ -5088,11 +5091,66 @@
     while (days[cur]) { n++; cur = streakAddDays(cur, -1); }
     return n;
   }
+
+  /* ----------------------------------------------------------------
+     🕓 連続記録の「1日」はゲーム内の日付で数える。
+     ゲームの日付更新(デイリーリセット)は太平洋時間0時=日本時間では夏時間中16:00
+     (冬時間中は17:00)。日付が変わった後でも、次の更新(日本時間15:59/16:59)までの入力は
+     前のゲーム内日付の記録として扱い、連続記録が途切れないようにする。
+     streakDateStr()はカレンダー計算用(ローカル日付)のままで、「いま/入力時刻がどのゲーム内日付か」
+     を求める時だけ下のgameDayStr()を使う。
+     ---------------------------------------------------------------- */
+  var gameDayFormatter = null;
+  function gameDayStr(ms) {
+    try {
+      if (!gameDayFormatter) {
+        gameDayFormatter = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' });
+      }
+      var m = {};
+      gameDayFormatter.formatToParts(new Date(ms)).forEach(function (p) { m[p.type] = p.value; });
+      return m.year + '-' + m.month + '-' + m.day;
+    } catch (e) { return streakDateStr(new Date(ms)); }
+  }
+  // ゲーム内の「今日」を、カレンダー計算(ヒートマップ等)用のローカル0時のDateとして返す
+  function gameTodayDate() {
+    var p = gameDayStr(Date.now()).split('-');
+    return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  }
+  // 記録済みの日(days)の中で最も長く連続している日数
+  function streakLongestRun(days) {
+    var keys = Object.keys(days).sort(), best = 0, run = 0, prev = null;
+    keys.forEach(function (k) {
+      run = (prev !== null && streakAddDays(prev, 1) === k) ? run + 1 : 1;
+      if (run > best) best = run;
+      prev = k;
+    });
+    return best;
+  }
+  // 過去の記録の補正。以前はカレンダー日(日本時間0時区切り)で日付を記録していたため、
+  // 日付が変わった後〜15:59の入力が翌日の記録になり、連続記録が途切れていることがある。
+  // 残っている入力時刻(獲得履歴・クエスト記録のtime)から本来のゲーム内日付を求めて補い、
+  // 最長記録も更新する(既存の記録は消さない＝連続日数が減ることはない)。プロフィールごとに1回だけ行う。
+  function streakMigrateGameDay(s, flagKey, getTimes, save) {
+    try { if (localStorage.getItem(flagKey) === '1') return s; } catch (e) { return s; }
+    var changed = false;
+    getTimes().forEach(function (ms) {
+      if (typeof ms !== 'number' || !isFinite(ms)) return;
+      var g = gameDayStr(ms);
+      if (!s.days[g]) { s.days[g] = 1; changed = true; }
+    });
+    if (changed) {
+      s.longest = Math.max(s.longest, streakLongestRun(s.days));
+      save(s);
+    }
+    try { localStorage.setItem(flagKey, '1'); } catch (e) { /* noop */ }
+    return s;
+  }
+
   // addHistoryEntry()から呼ばれる。今日をまだ記録していなければ記録し、
   // 最長ストリーク(longest)をMath.max()でのみ更新する(後から縮まない)。
   function streakRecordToday() {
     var s = loadStreak();
-    var today = streakDateStr(new Date());
+    var today = gameDayStr(Date.now());
     if (!s.days[today]) {
       s.days[today] = 1;
       s.longest = Math.max(s.longest, streakRunEndingAt(s.days, today));
@@ -5103,7 +5161,7 @@
   // 表示用の「今つながっている」ストリーク。最終記録日が今日か昨日なら継続中とみなし、
   // それより前で途切れていれば0(=表示上は途切れている)を返す。
   function streakCurrentLive(s) {
-    var today = streakDateStr(new Date());
+    var today = gameDayStr(Date.now());
     if (s.days[today]) return streakRunEndingAt(s.days, today);
     var yesterday = streakAddDays(today, -1);
     if (s.days[yesterday]) return streakRunEndingAt(s.days, yesterday);
@@ -5142,8 +5200,7 @@
   }
   // 表示範囲(グリッドの開始日・週数)を、記録済みの最も古い日付とHEATMAP_MIN/MAX_WEEKSから決める。
   function computeHeatmapRange(days) {
-    var today = new Date();
-    today.setHours(0, 0, 0, 0);
+    var today = gameTodayDate();
     var minDate = today;
     Object.keys(days).forEach(function (k) {
       var p = k.split('-');
@@ -5256,7 +5313,7 @@
     var input = document.getElementById('questLogInput');
     var text = ((input && input.value) || '').trim();
     if (!text) return;
-    var today = streakDateStr(new Date());
+    var today = gameDayStr(Date.now());
     var list = loadQuestLog();
     var existing = null;
     for (var i = 0; i < list.length; i++) { if (list[i].date === today) { existing = list[i]; break; } }
@@ -5303,7 +5360,7 @@
   function questLogPrefillToday() {
     var input = document.getElementById('questLogInput');
     if (!input) return;
-    var today = streakDateStr(new Date());
+    var today = gameDayStr(Date.now());
     var list = loadQuestLog();
     for (var i = 0; i < list.length; i++) {
       if (list[i].date === today) { input.value = list[i].text; break; }
@@ -5318,11 +5375,14 @@
   // 共通関数をそのまま呼び出し、ここでは再実装しない。
   function questStreakKey() { return nsKey('dailyQuestStreak_v1'); } // { days:{'YYYY-MM-DD':1,...}, longest:number }
   function loadQuestStreak() {
+    var s = { days: {}, longest: 0 };
     try {
       var d = JSON.parse(localStorage.getItem(questStreakKey()));
-      if (d && typeof d === 'object') return { days: d.days || {}, longest: d.longest || 0 };
+      if (d && typeof d === 'object') s = { days: d.days || {}, longest: d.longest || 0 };
     } catch (e) { /* 破損データは初期状態として扱う */ }
-    return { days: {}, longest: 0 };
+    return streakMigrateGameDay(s, nsKey('dailyQuestStreakGameDay_v1'), function () {
+      return loadQuestLog().map(function (e) { return e && e.time; });
+    }, saveQuestStreak);
   }
   function saveQuestStreak(s) {
     try { localStorage.setItem(questStreakKey(), JSON.stringify(s)); } catch (e) { /* noop */ }
@@ -5331,7 +5391,7 @@
   // 最長ストリーク(longest)をMath.max()でのみ更新する(後から縮まない)。
   function questStreakRecordToday() {
     var s = loadQuestStreak();
-    var today = streakDateStr(new Date());
+    var today = gameDayStr(Date.now());
     if (!s.days[today]) {
       s.days[today] = 1;
       s.longest = Math.max(s.longest, streakRunEndingAt(s.days, today));
@@ -5342,7 +5402,7 @@
   // 表示用の「今つながっている」ストリーク。最終記録日が今日か昨日なら継続中とみなし、
   // それより前で途切れていれば0(=表示上は途切れている)を返す(streakCurrentLiveと同じ判定)。
   function questStreakCurrentLive(s) {
-    var today = streakDateStr(new Date());
+    var today = gameDayStr(Date.now());
     if (s.days[today]) return streakRunEndingAt(s.days, today);
     var yesterday = streakAddDays(today, -1);
     if (s.days[yesterday]) return streakRunEndingAt(s.days, yesterday);
@@ -5380,7 +5440,7 @@
      📜獲得履歴(HISTORY_STORAGE_KEY)と🗒️デイリークエスト記録(QUEST_LOG_KEY)の
      どちらか一方でも、今日とちょうど同じ月日でちょうど1年前のエントリが
      あればページ読み込み時に気づけるよう、小さく閉じられるバナーで知らせる。
-     「今日」の判定は🔥ストリークと同じ考え方(streakDateStr、ブラウザのローカル日付。
+     「今日」の判定は🔥ストリークと同じ考え方(ゲーム内の日付。gameDayStr()/gameTodayDate()参照。
      historyTimeLabel()のようなAsia/Tokyo固定はここでは使わない。あちらは表示専用の
      整形であり、「今日」という日付境界そのものはstreak/questログ側の流儀に合わせる)。
      閉じるボタンを押した日付をnsKey()で(プロフィールごとに)覚えておき、同じ日のうちは
@@ -5398,8 +5458,8 @@
   function findOneYearAgoHistoryEntry(today) {
     var list = loadHistory();
     for (var i = 0; i < list.length; i++) {
-      var d = new Date(list[i].time);
-      if (d.getMonth() === today.getMonth() && d.getDate() === today.getDate() && d.getFullYear() === today.getFullYear() - 1) {
+      var g = gameDayStr(list[i].time).split('-');
+      if (Number(g[1]) - 1 === today.getMonth() && Number(g[2]) === today.getDate() && Number(g[0]) === today.getFullYear() - 1) {
         return list[i];
       }
     }
@@ -5421,7 +5481,7 @@
   function renderOneYearAgoBanner() {
     var wrap = document.getElementById('oneYearAgoBanner');
     if (!wrap) return;
-    var today = new Date();
+    var today = gameTodayDate();
     var todayStr = streakDateStr(today);
     var dismissedDate = null;
     try { dismissedDate = localStorage.getItem(ONE_YEAR_AGO_DISMISS_KEY); } catch (e) { /* noop */ }
@@ -5449,7 +5509,7 @@
     oneYearAgoWrap.addEventListener('click', function (ev) {
       var btn = ev.target.closest ? ev.target.closest('.one-year-ago-close-btn') : null;
       if (!btn) return;
-      try { localStorage.setItem(ONE_YEAR_AGO_DISMISS_KEY, streakDateStr(new Date())); } catch (e) { /* noop */ }
+      try { localStorage.setItem(ONE_YEAR_AGO_DISMISS_KEY, gameDayStr(Date.now())); } catch (e) { /* noop */ }
       oneYearAgoWrap.classList.remove('is-visible');
       oneYearAgoWrap.innerHTML = '';
     });
