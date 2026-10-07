@@ -2881,7 +2881,7 @@
         });
       });
     }
-    if (data.season && data.season.name && data.season.endDate) {
+    if (data.season && data.season.name && data.season.endDate && new Date() < new Date(data.season.endDate)) {
       pushItems({ end: data.season.endDate }, pfDashLocalizeName(data.season.name));
     }
     (data.eventSchedule || []).forEach(function (ev) { pushItems(ev, pfDashLocalizeName(ev.name)); });
