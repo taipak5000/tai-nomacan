@@ -1648,6 +1648,9 @@
       turtleDarkness: { ja: '亀闇', en: 'Turtle Darkness' },
       currentlyActive: { ja: 'が開催中', en: ' is currently active' },
       endsIn: { ja: '終了まで', en: 'Ends in' },
+      startsSoon: { ja: 'が始まります', en: ' is coming up' },
+      startsIn: { ja: '開始まで', en: 'Starts in' },
+      weekdays: { ja: '日,月,火,水,木,金,土', en: 'Sun,Mon,Tue,Wed,Thu,Fri,Sat' },
       seasonEndsInSuffix: { ja: '終了まで', en: ' ends in' },
       revisitSpirit: { ja: '再訪精霊', en: 'Revisit Spirit' },
       revisitHereNow: { ja: 'が来訪中', en: ' is here now' },
@@ -3004,6 +3007,25 @@
     if (LANG !== 'en' || typeof name !== 'string') return name;
     return DASH_NAME_EN[name] !== undefined ? DASH_NAME_EN[name] : name;
   }
+  // これから開始するイベント（開始日時がまだ先のもの）を、開始の近い順に返す。startを持たない
+  // エントリは「常に開催中」扱いなので対象外。ダッシュボードの今日/今週/今月は、開催中のものは
+  // 「終了まで」、これから始まるものは「開始まで」の残り時間で振り分ける（例: 金曜に始まる季節は今週欄）。
+  // 開始が約1か月より先のものは、今月欄が埋もれないよう載せない（先の予定はカレンダーで確認できる）。
+  var PF_DASH_UPCOMING_MAX_MS = 31 * 24 * 60 * 60 * 1000;
+  function pfDashUpcomingScheduledEvents(schedule) {
+    var now = Date.now();
+    return (schedule || []).filter(function (ev) {
+      if (!ev || !ev.start) return false;
+      var s = new Date(ev.start).getTime();
+      return s > now && s - now <= PF_DASH_UPCOMING_MAX_MS;
+    }).sort(function (a, b) { return new Date(a.start) - new Date(b.start); });
+  }
+  // 「10/16(金) 16:00」形式（端末のローカル時刻）。曜日は言語ごとのカンマ区切り7語（日曜始まり）
+  function pfDashFormatStart(d, weekdaysCsv) {
+    var wd = String(weekdaysCsv || '').split(',')[d.getDay()] || '';
+    var hh = String(d.getHours()).padStart(2, '0'), mi = String(d.getMinutes()).padStart(2, '0');
+    return (d.getMonth() + 1) + '/' + d.getDate() + (wd ? '(' + wd + ')' : '') + ' ' + hh + ':' + mi;
+  }
   function pfDashRow(icon, html) {
     return '<div class="dash-row"><span class="dash-row-icon">' + icon + '</span><span class="dash-row-text">' + html + '</span></div>';
   }
@@ -3052,6 +3074,17 @@
     pfDashActiveScheduledEvents(data.candleBonusSchedule).forEach(function (ev) {
       var bonusEnd = new Date(ev.end);
       bucketRows[pfDashBucketFor(bonusEnd)].push(pfDashRow('<svg class="inline-icon" width="16" height="16"><use href="#i-candle"/></svg>', '<b>' + pfEscapeHtml(pfDashLocalizeName(ev.name)) + '</b>' + t('dashboard.currentlyActive') + '<span class="dash-countdown">' + t('dashboard.endsIn') + ' ' + pfDashCountdown(bonusEnd) + '</span>'));
+    });
+    // 🆕 これから始まるイベント（開始が近いものは今日/今週、約1か月先までは今月）。
+    // 開催中のものが「終了まで」の残り時間で振り分けられるのと対称に、「開始まで」で振り分ける
+    var upcomingWeekdays = t('dashboard.weekdays');
+    pfDashUpcomingScheduledEvents(data.eventSchedule).forEach(function (ev) {
+      var startDate = new Date(ev.start);
+      bucketRows[pfDashBucketFor(startDate)].push(pfDashRow('<svg class="inline-icon" width="16" height="16"><use href="#i-star"/></svg>', '<b>' + pfEscapeHtml(pfDashLocalizeName(ev.name)) + '</b>' + t('dashboard.startsSoon') + '<span class="dash-countdown">' + t('dashboard.startsIn') + ' ' + pfDashCountdown(startDate) + '</span><span class="dash-note">' + pfDashFormatStart(startDate, upcomingWeekdays) + '</span>'));
+    });
+    pfDashUpcomingScheduledEvents(data.candleBonusSchedule).forEach(function (ev) {
+      var startDate = new Date(ev.start);
+      bucketRows[pfDashBucketFor(startDate)].push(pfDashRow('<svg class="inline-icon" width="16" height="16"><use href="#i-candle"/></svg>', '<b>' + pfEscapeHtml(pfDashLocalizeName(ev.name)) + '</b>' + t('dashboard.startsSoon') + '<span class="dash-countdown">' + t('dashboard.startsIn') + ' ' + pfDashCountdown(startDate) + '</span><span class="dash-note">' + pfDashFormatStart(startDate, upcomingWeekdays) + '</span>'));
     });
     pfDashRevisitStatuses(data.revisitSchedules).forEach(function (entry) {
       var rv = entry.status;
